@@ -1,3 +1,4 @@
+mod boolean_arithmetic;
 mod boolean_logic;
 
 fn main() {

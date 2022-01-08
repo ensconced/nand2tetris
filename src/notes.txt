@@ -1,0 +1,3 @@
+notes
+
+attempt to just use functions for logic gates
