@@ -1,4 +1,4 @@
-use crate::boolean_logic::{and, or, xor};
+use crate::boolean_logic::{and, and16, mux16, not, not16, or, or8way, xor};
 
 fn half_adder(a: bool, b: bool) -> [bool; 2] {
     [and(a, b), xor(a, b)]
@@ -45,6 +45,42 @@ fn inc16(input: [bool; 16]) -> [bool; 16] {
     add16(input, one)
 }
 
+fn is_non_zero(a: [bool; 16]) -> bool {
+    or(
+        or8way([a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]]),
+        or8way([a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15]]),
+    )
+}
+
+struct ALUOutput {
+    out: [bool; 16],
+    zr: bool,
+    ng: bool,
+}
+
+fn alu(
+    x: [bool; 16],
+    y: [bool; 16],
+    zx: bool,
+    nx: bool,
+    zy: bool,
+    ny: bool,
+    f: bool,
+    no: bool,
+) -> ALUOutput {
+    let stage1x = mux16(x, [false; 16], zx);
+    let stage1y = mux16(y, [false; 16], zy);
+    let stage2x = mux16(stage1x, not16(stage1x), nx);
+    let stage2y = mux16(stage1y, not16(stage1y), ny);
+    let anded = and16(stage2x, stage2y);
+    let added = add16(stage2x, stage2y);
+    let fed = mux16(anded, added, f);
+    let out = mux16(fed, not16(fed), no);
+    let zr = not(is_non_zero(out));
+    let ng = out[0];
+    ALUOutput { out, zr, ng }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,8 +123,276 @@ mod tests {
 
     #[test]
     fn test_inc16() {
-        assert_eq!(inc16(binary(0)), binary(1));
-        assert_eq!(inc16(binary(123)), binary(124));
-        assert_eq!(inc16(binary(i16::MAX)), binary(i16::MIN));
+        fn test(num: i16) {
+            let wrapped_num = std::num::Wrapping(num);
+            let correct_result = (wrapped_num + std::num::Wrapping(1)).0;
+            assert_eq!(inc16(binary(wrapped_num.0)), binary(correct_result));
+        }
+        test(0);
+        test(123);
+        test(i16::MAX);
+    }
+
+    #[test]
+    fn test_is_non_zero() {
+        fn test(num: i16) {
+            assert_eq!(is_non_zero(binary(num)), num != 0);
+        }
+        test(-1);
+        test(123);
+        test(-123);
+        test(0);
+    }
+
+    #[test]
+    fn test_alu_zero() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, false, true, false, true, false);
+            assert_eq!(result.out, binary(0))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, true, true, true, true, true);
+            assert_eq!(result.out, binary(1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_minus_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, false, true, false, false, true);
+            assert_eq!(result.out, binary(-1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, false, true, false, true, false);
+            assert_eq!(result.out, binary(x))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, false, false, false, true, false);
+            assert_eq!(result.out, binary(y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_not_x() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, true, true, false, true, false);
+            assert_eq!(result.out, not16(binary(x)))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_not_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, false, false, true, true, false);
+            assert_eq!(result.out, not16(binary(y)))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_minus_x() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, false, true, true, true, true);
+            assert_eq!(result.out, binary(-x))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_minus_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, true, false, false, true, true);
+            assert_eq!(result.out, binary(-y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_plus_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, true, true, true, true, true);
+            assert_eq!(result.out, binary(x + 1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_y_plus_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, true, false, true, true, true);
+            assert_eq!(result.out, binary(y + 1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_minus_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, false, true, true, true, false);
+            assert_eq!(result.out, binary(x - 1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_y_minus_one() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), true, true, false, false, true, false);
+            assert_eq!(result.out, binary(y - 1))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_plus_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(
+                binary(x),
+                binary(y),
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+            );
+            assert_eq!(result.out, binary(x + y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_minus_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, true, false, false, true, true);
+            assert_eq!(result.out, binary(x - y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_y_minus_x() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, false, false, true, true, true);
+            assert_eq!(result.out, binary(y - x))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_and_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(
+                binary(x),
+                binary(y),
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+            );
+            assert_eq!(result.out, binary(x & y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
+    }
+
+    #[test]
+    fn test_alu_x_or_y() {
+        fn test(x: i16, y: i16) {
+            let result = alu(binary(x), binary(y), false, true, false, true, false, true);
+            assert_eq!(result.out, binary(x | y))
+        }
+        test(0, 0);
+        test(1, 0);
+        test(0, 1);
+        test(123, 1234);
+        test(-123, -1234);
     }
 }

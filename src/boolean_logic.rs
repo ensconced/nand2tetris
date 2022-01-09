@@ -2,7 +2,7 @@ fn nand(input_a: bool, input_b: bool) -> bool {
     !(input_a && input_b)
 }
 
-fn not(input: bool) -> bool {
+pub fn not(input: bool) -> bool {
     nand(input, input)
 }
 
@@ -29,7 +29,7 @@ fn dmux(input: bool, sel: bool) -> [bool; 2] {
     [and(not(sel), input), and(sel, input)]
 }
 
-fn not16(input: [bool; 16]) -> [bool; 16] {
+pub fn not16(input: [bool; 16]) -> [bool; 16] {
     [
         not(input[0]),
         not(input[1]),
@@ -50,7 +50,7 @@ fn not16(input: [bool; 16]) -> [bool; 16] {
     ]
 }
 
-fn and16(input_a: [bool; 16], input_b: [bool; 16]) -> [bool; 16] {
+pub fn and16(input_a: [bool; 16], input_b: [bool; 16]) -> [bool; 16] {
     [
         and(input_a[0], input_b[0]),
         and(input_a[1], input_b[1]),
@@ -92,7 +92,7 @@ fn or16(input_a: [bool; 16], input_b: [bool; 16]) -> [bool; 16] {
     ]
 }
 
-fn mux16(input_a: [bool; 16], input_b: [bool; 16], sel: bool) -> [bool; 16] {
+pub fn mux16(input_a: [bool; 16], input_b: [bool; 16], sel: bool) -> [bool; 16] {
     [
         mux(input_a[0], input_b[0], sel),
         mux(input_a[1], input_b[1], sel),
@@ -113,7 +113,7 @@ fn mux16(input_a: [bool; 16], input_b: [bool; 16], sel: bool) -> [bool; 16] {
     ]
 }
 
-fn or8way(input: [bool; 8]) -> bool {
+pub fn or8way(input: [bool; 8]) -> bool {
     or(
         or(or(input[0], input[1]), or(input[2], input[3])),
         or(or(input[4], input[5]), or(input[6], input[7])),
