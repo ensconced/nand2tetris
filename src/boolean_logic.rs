@@ -21,7 +21,7 @@ pub fn xor(input_a: bool, input_b: bool) -> bool {
     )
 }
 
-fn mux(input_a: bool, input_b: bool, sel: bool) -> bool {
+pub fn mux(input_a: bool, input_b: bool, sel: bool) -> bool {
     or(and(input_a, not(sel)), and(input_b, sel))
 }
 
