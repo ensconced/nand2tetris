@@ -10,7 +10,7 @@ pub fn and(input_a: bool, input_b: bool) -> bool {
     not(nand(input_a, input_b))
 }
 
-fn or(input_a: bool, input_b: bool) -> bool {
+pub fn or(input_a: bool, input_b: bool) -> bool {
     nand(nand(input_a, input_a), nand(input_b, input_b))
 }
 
