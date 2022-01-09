@@ -129,24 +129,12 @@ fn mux4way16(
 ) -> [bool; 16] {
     or16(
         or16(
-            mux16(
-                and16(not16(input_a), input_a),
-                input_a,
-                and(not(sel[0]), not(sel[1])),
-            ),
-            mux16(
-                and16(not16(input_b), input_b),
-                input_b,
-                and(not(sel[0]), sel[1]),
-            ),
+            mux16([false; 16], input_a, and(not(sel[0]), not(sel[1]))),
+            mux16([false; 16], input_b, and(not(sel[0]), sel[1])),
         ),
         or16(
-            mux16(
-                and16(not16(input_c), input_c),
-                input_c,
-                and(sel[0], not(sel[1])),
-            ),
-            mux16(and16(not16(input_d), input_d), input_d, and(sel[0], sel[1])),
+            mux16([false; 16], input_c, and(sel[0], not(sel[1]))),
+            mux16([false; 16], input_d, and(sel[0], sel[1])),
         ),
     )
 }
@@ -166,53 +154,37 @@ fn mux8way16(
         or16(
             or16(
                 mux16(
-                    and16(not16(input_a), input_a),
+                    [false; 16],
                     input_a,
                     and(not(sel[0]), and(not(sel[1]), not(sel[2]))),
                 ),
                 mux16(
-                    and16(not16(input_b), input_b),
+                    [false; 16],
                     input_b,
                     and(not(sel[0]), and(not(sel[1]), sel[2])),
                 ),
             ),
             or16(
                 mux16(
-                    and16(not16(input_c), input_c),
+                    [false; 16],
                     input_c,
                     and(not(sel[0]), and(sel[1], not(sel[2]))),
                 ),
-                mux16(
-                    and16(not16(input_d), input_d),
-                    input_d,
-                    and(not(sel[0]), and(sel[1], sel[2])),
-                ),
+                mux16([false; 16], input_d, and(not(sel[0]), and(sel[1], sel[2]))),
             ),
         ),
         or16(
             or16(
                 mux16(
-                    and16(not16(input_e), input_e),
+                    [false; 16],
                     input_e,
                     and(sel[0], and(not(sel[1]), not(sel[2]))),
                 ),
-                mux16(
-                    and16(not16(input_f), input_f),
-                    input_f,
-                    and(sel[0], and(not(sel[1]), sel[2])),
-                ),
+                mux16([false; 16], input_f, and(sel[0], and(not(sel[1]), sel[2]))),
             ),
             or16(
-                mux16(
-                    and16(not16(input_g), input_g),
-                    input_g,
-                    and(sel[0], and(sel[1], not(sel[2]))),
-                ),
-                mux16(
-                    and16(not16(input_h), input_h),
-                    input_h,
-                    and(sel[0], and(sel[1], sel[2])),
-                ),
+                mux16([false; 16], input_g, and(sel[0], and(sel[1], not(sel[2])))),
+                mux16([false; 16], input_h, and(sel[0], and(sel[1], sel[2]))),
             ),
         ),
     )
