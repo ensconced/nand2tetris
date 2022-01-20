@@ -1,62 +1,70 @@
-struct Pin<'a> {
-    value: bool,
-    feeds: Vec<&'a Pin<'a>>,
+use std::cell::Cell;
+struct Pin {
+    value: Cell<bool>,
 }
 
-impl<'a> Pin<'a> {
+struct PinConnection<'a> {
+    source_pin: &'a Pin,
+    sink_pin: &'a Pin,
+}
+
+impl Pin {
     fn new() -> Self {
         Self {
-            value: false,
-            feeds: vec![],
+            value: Cell::new(false),
         }
     }
-    fn feed(&mut self, other: &'a Pin<'a>) {
-        self.feeds.push(other);
-    }
 }
 
-struct NandGate<'a> {
-    input_a: Pin<'a>,
-    input_b: Pin<'a>,
-    output: Pin<'a>,
+struct NandGate {
+    input_a: Pin,
+    input_b: Pin,
+    output: Pin,
 }
 
-impl<'a> NandGate<'a> {
+impl NandGate {
     fn new() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
-        let mut result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-        result.compute();
-        result
+        Self {
+            input_a: Pin::new(),
+            input_b: Pin::new(),
+            output: Pin::new(),
+        }
     }
 
     fn compute(&mut self) {
-        self.output.value = !(self.input_a.value && self.input_b.value);
+        self.output
+            .value
+            .set(self.input_a.value.get() && self.input_b.value.get())
     }
 }
 
 struct NotGate<'a> {
-    input: Pin<'a>,
-    output: Pin<'a>,
-    nand: NandGate<'a>,
+    input: Pin,
+    output: Pin,
+    nand_gate: NandGate,
+    connections: Vec<PinConnection<'a>>,
 }
 
 impl<'a> NotGate<'a> {
     fn new() -> Self {
-        let mut result = Self {
-            input: Pin::new(),
-            output: Pin::new(),
-            nand: NandGate::new(),
-        };
-        result.input.feed(&result.nand.input_a);
-        result.input.feed(&result.nand.input_b);
-        result.nand.output.feed(&result.output);
-        result
+        let nand_gate = NandGate::new();
+        let output = Pin::new();
+        let input = Pin::new();
+        let mut connections = vec![];
+        connections.push(PinConnection {
+            source_pin: &input,
+            sink_pin: &nand_gate.input_a,
+        });
+        connections.push(PinConnection {
+            source_pin: &input,
+            sink_pin: &nand_gate.input_a,
+        });
+        Self {
+            input,
+            output,
+            nand_gate,
+            connections,
+        }
     }
 }
 
