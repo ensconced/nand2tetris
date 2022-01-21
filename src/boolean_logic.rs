@@ -1,33 +1,35 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
 struct Pin {
     value: Cell<bool>,
-}
-
-struct PinConnection<'a> {
-    source_pin: &'a Pin,
-    sink_pin: &'a Pin,
+    connected_pins: RefCell<Vec<Rc<Pin>>>,
 }
 
 impl Pin {
     fn new() -> Self {
         Self {
             value: Cell::new(false),
+            connected_pins: RefCell::new(vec![]),
         }
+    }
+    fn connect(&self, pin: Rc<Pin>) {
+        self.connected_pins.borrow_mut().push(pin.clone());
     }
 }
 
 struct NandGate {
-    input_a: Pin,
-    input_b: Pin,
-    output: Pin,
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
 }
 
 impl NandGate {
     fn new() -> Self {
         Self {
-            input_a: Pin::new(),
-            input_b: Pin::new(),
-            output: Pin::new(),
+            input_a: Rc::new(Pin::new()),
+            input_b: Rc::new(Pin::new()),
+            output: Rc::new(Pin::new()),
         }
     }
 
@@ -38,43 +40,86 @@ impl NandGate {
     }
 }
 
-struct NotGate<'a> {
-    input: Pin,
-    output: Pin,
+struct NotGate {
+    input: Rc<Pin>,
+    output: Rc<Pin>,
     nand_gate: NandGate,
-    connections: Vec<PinConnection<'a>>,
 }
 
-impl<'a> NotGate<'a> {
+impl NotGate {
     fn new() -> Self {
         let nand_gate = NandGate::new();
-        let output = Pin::new();
+        let output = Rc::new(Pin::new());
         let input = Pin::new();
-        let mut connections = vec![];
-        connections.push(PinConnection {
-            source_pin: &input,
-            sink_pin: &nand_gate.input_a,
-        });
-        connections.push(PinConnection {
-            source_pin: &input,
-            sink_pin: &nand_gate.input_a,
-        });
+        input.connect(nand_gate.input_a.clone());
+        input.connect(nand_gate.input_b.clone());
+        nand_gate.output.connect(output.clone());
         Self {
-            input,
+            input: Rc::new(input),
             output,
             nand_gate,
-            connections,
         }
     }
 }
 
-// // pub fn not(input: bool) -> bool {
-// //     nand(input, input)
-// // }
+struct AndGate {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
+}
 
-// // pub fn and(input_a: bool, input_b: bool) -> bool {
-// //     not(nand(input_a, input_b))
-// // }
+impl AndGate {
+    fn new() -> Self {
+        let input_a = Rc::new(Pin::new());
+        let input_b = Rc::new(Pin::new());
+        let output = Rc::new(Pin::new());
+        let nand_gate = NandGate::new();
+        let not_gate = NotGate::new();
+        input_a.connect(nand_gate.input_a);
+        input_b.connect(nand_gate.input_b);
+        nand_gate.output.connect(not_gate.input);
+        not_gate.output.connect(output.clone());
+        Self {
+            input_a,
+            input_b,
+            output,
+        }
+    }
+}
+
+struct OrGate {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
+}
+
+impl OrGate {
+    fn new() -> Self {
+        let input_a = Rc::new(Pin::new());
+        let input_b = Rc::new(Pin::new());
+        let output = Rc::new(Pin::new());
+
+        let nand_a = NandGate::new();
+        let nand_b = NandGate::new();
+        let nand_c = NandGate::new();
+
+        input_a.connect(nand_a.input_a);
+        input_a.connect(nand_a.input_b);
+
+        input_b.connect(nand_b.input_a);
+        input_b.connect(nand_b.input_b);
+
+        nand_a.output.connect(nand_c.input_a);
+        nand_b.output.connect(nand_c.input_b);
+        nand_c.output.connect(output.clone());
+
+        Self {
+            input_a,
+            input_b,
+            output,
+        }
+    }
+}
 
 // // pub fn or(input_a: bool, input_b: bool) -> bool {
 // //     nand(nand(input_a, input_a), nand(input_b, input_b))
