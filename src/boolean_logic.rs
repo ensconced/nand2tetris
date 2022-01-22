@@ -75,7 +75,7 @@ impl Pin {
             })
         }
     }
-    fn connect(&self, pin: Rc<Pin>) {
+    fn feed_from(&self, pin: Rc<Pin>) {
         let mut connection = self.connection.borrow_mut();
         if connection.as_ref().is_some() {
             panic!("pin is already connected");
@@ -139,14 +139,14 @@ impl TwoInOneOutGate {
         let nand_b = TwoInOneOutGate::nand();
         let nand_c = TwoInOneOutGate::nand();
 
-        result.output.connect(nand_c.output);
-        nand_c.input_a.connect(nand_a.output);
-        nand_c.input_b.connect(nand_b.output);
+        result.output.feed_from(nand_c.output);
+        nand_c.input_a.feed_from(nand_a.output);
+        nand_c.input_b.feed_from(nand_b.output);
 
-        nand_a.input_a.connect(result.input_a.clone());
-        nand_a.input_b.connect(result.input_a.clone());
-        nand_b.input_a.connect(result.input_b.clone());
-        nand_b.input_b.connect(result.input_b.clone());
+        nand_a.input_a.feed_from(result.input_a.clone());
+        nand_a.input_b.feed_from(result.input_a.clone());
+        nand_b.input_a.feed_from(result.input_b.clone());
+        nand_b.input_b.feed_from(result.input_b.clone());
 
         result
     }
@@ -154,10 +154,10 @@ impl TwoInOneOutGate {
         let result = Self::base();
         let nand_gate = TwoInOneOutGate::nand();
         let not_gate = NotGate::new();
-        result.output.connect(not_gate.output);
-        not_gate.input.connect(nand_gate.output);
-        nand_gate.input_a.connect(result.input_a.clone());
-        nand_gate.input_b.connect(result.input_b.clone());
+        result.output.feed_from(not_gate.output);
+        not_gate.input.feed_from(nand_gate.output);
+        nand_gate.input_a.feed_from(result.input_a.clone());
+        nand_gate.input_b.feed_from(result.input_b.clone());
         result
     }
 
@@ -169,18 +169,18 @@ impl TwoInOneOutGate {
         let nand_c = Self::nand();
         let nand_d = Self::nand();
 
-        result.output.connect(nand_d.output);
-        nand_d.input_a.connect(nand_b.output);
-        nand_d.input_b.connect(nand_c.output);
+        result.output.feed_from(nand_d.output);
+        nand_d.input_a.feed_from(nand_b.output);
+        nand_d.input_b.feed_from(nand_c.output);
 
-        nand_b.input_a.connect(result.input_a.clone());
-        nand_b.input_b.connect(nand_a.output.clone());
+        nand_b.input_a.feed_from(result.input_a.clone());
+        nand_b.input_b.feed_from(nand_a.output.clone());
 
-        nand_c.input_b.connect(result.input_b.clone());
-        nand_c.input_a.connect(nand_a.output);
+        nand_c.input_b.feed_from(result.input_b.clone());
+        nand_c.input_a.feed_from(nand_a.output);
 
-        nand_a.input_a.connect(result.input_a.clone());
-        nand_a.input_b.connect(result.input_b.clone());
+        nand_a.input_a.feed_from(result.input_a.clone());
+        nand_a.input_b.feed_from(result.input_b.clone());
 
         result
     }
@@ -217,9 +217,9 @@ impl NotGate {
         let output = Pin::new();
         let nand_gate = TwoInOneOutGate::nand();
         let result = Self { input, output };
-        result.output.connect(nand_gate.output);
-        nand_gate.input_a.connect(result.input.clone());
-        nand_gate.input_b.connect(result.input.clone());
+        result.output.feed_from(nand_gate.output);
+        nand_gate.input_a.feed_from(result.input.clone());
+        nand_gate.input_b.feed_from(result.input.clone());
         result
     }
 }
@@ -261,16 +261,16 @@ impl Mux {
         let or = TwoInOneOutGate::or();
         let not = NotGate::new();
 
-        result.output.connect(or.output);
-        or.input_a.connect(and_a.output);
-        or.input_b.connect(and_b.output);
+        result.output.feed_from(or.output);
+        or.input_a.feed_from(and_a.output);
+        or.input_b.feed_from(and_b.output);
 
-        and_a.input_a.connect(result.input_a.clone());
-        and_a.input_b.connect(not.output);
-        not.input.connect(result.sel.clone());
+        and_a.input_a.feed_from(result.input_a.clone());
+        and_a.input_b.feed_from(not.output);
+        not.input.feed_from(result.sel.clone());
 
-        and_b.input_a.connect(result.input_b.clone());
-        and_b.input_b.connect(result.sel.clone());
+        and_b.input_a.feed_from(result.input_b.clone());
+        and_b.input_b.feed_from(result.sel.clone());
 
         result
     }
@@ -308,14 +308,14 @@ impl DMux {
         let and_a = TwoInOneOutGate::and();
         let and_b = TwoInOneOutGate::and();
 
-        result.output_a.connect(and_a.output);
-        and_a.input_a.connect(not.output);
-        and_a.input_b.connect(result.input.clone());
-        not.input.connect(result.sel.clone());
+        result.output_a.feed_from(and_a.output);
+        and_a.input_a.feed_from(not.output);
+        and_a.input_b.feed_from(result.input.clone());
+        not.input.feed_from(result.sel.clone());
 
-        result.output_b.connect(and_b.output);
-        and_b.input_a.connect(result.sel.clone());
-        and_b.input_b.connect(result.input.clone());
+        result.output_b.feed_from(and_b.output);
+        and_b.input_a.feed_from(result.sel.clone());
+        and_b.input_b.feed_from(result.input.clone());
 
         result
     }
@@ -342,8 +342,8 @@ impl Not16 {
         let result = Self { input, output };
         for i in 0..16 {
             let not = NotGate::new();
-            result.output[i].connect(not.output);
-            not.input.connect(result.input[i].clone());
+            result.output[i].feed_from(not.output);
+            not.input.feed_from(result.input[i].clone());
         }
         result
     }
@@ -389,9 +389,9 @@ impl TwoInOneOut16 {
         let result = Self::base();
         for i in 0..16 {
             let and = TwoInOneOutGate::and();
-            result.output[i].connect(and.output);
-            and.input_a.connect(result.input_a[i].clone());
-            and.input_b.connect(result.input_b[i].clone());
+            result.output[i].feed_from(and.output);
+            and.input_a.feed_from(result.input_a[i].clone());
+            and.input_b.feed_from(result.input_b[i].clone());
         }
         result
     }
@@ -399,9 +399,9 @@ impl TwoInOneOut16 {
         let result = Self::base();
         for i in 0..16 {
             let or = TwoInOneOutGate::or();
-            result.output[i].connect(or.output);
-            or.input_a.connect(result.input_a[i].clone());
-            or.input_b.connect(result.input_b[i].clone());
+            result.output[i].feed_from(or.output);
+            or.input_a.feed_from(result.input_a[i].clone());
+            or.input_b.feed_from(result.input_b[i].clone());
         }
         result
     }
@@ -476,10 +476,10 @@ impl Mux16 {
 
         for i in 0..16 {
             let mux = Mux::new();
-            mux.sel.connect(result.sel.clone());
-            mux.input_a.connect(result.input_a[i].clone());
-            mux.input_b.connect(result.input_b[i].clone());
-            result.output[i].connect(mux.output);
+            mux.sel.feed_from(result.sel.clone());
+            mux.input_a.feed_from(result.input_a[i].clone());
+            mux.input_b.feed_from(result.input_b[i].clone());
+            result.output[i].feed_from(mux.output);
         }
 
         result
@@ -531,24 +531,24 @@ impl Or8Way {
         let or_f = TwoInOneOutGate::or();
         let or_g = TwoInOneOutGate::or();
 
-        result.output.connect(or_a.output);
+        result.output.feed_from(or_a.output);
 
-        or_a.input_a.connect(or_b.output);
-        or_a.input_b.connect(or_e.output);
+        or_a.input_a.feed_from(or_b.output);
+        or_a.input_b.feed_from(or_e.output);
 
-        or_b.input_a.connect(or_c.output);
-        or_b.input_b.connect(or_d.output);
-        or_e.input_a.connect(or_f.output);
-        or_e.input_b.connect(or_g.output);
+        or_b.input_a.feed_from(or_c.output);
+        or_b.input_b.feed_from(or_d.output);
+        or_e.input_a.feed_from(or_f.output);
+        or_e.input_b.feed_from(or_g.output);
 
-        or_c.input_a.connect(result.input[0].clone());
-        or_c.input_b.connect(result.input[1].clone());
-        or_d.input_a.connect(result.input[2].clone());
-        or_d.input_b.connect(result.input[3].clone());
-        or_f.input_a.connect(result.input[4].clone());
-        or_f.input_b.connect(result.input[5].clone());
-        or_g.input_a.connect(result.input[6].clone());
-        or_g.input_b.connect(result.input[7].clone());
+        or_c.input_a.feed_from(result.input[0].clone());
+        or_c.input_b.feed_from(result.input[1].clone());
+        or_d.input_a.feed_from(result.input[2].clone());
+        or_d.input_b.feed_from(result.input[3].clone());
+        or_f.input_a.feed_from(result.input[4].clone());
+        or_f.input_b.feed_from(result.input[5].clone());
+        or_g.input_a.feed_from(result.input[6].clone());
+        or_g.input_b.feed_from(result.input[7].clone());
 
         result
     }
@@ -594,46 +594,108 @@ impl Mux4Way16 {
             output,
         };
 
-        let or16_a = TwoInOneOut16::or16();
+        let constant_false = Pin::new();
+
+        let mux_a = Mux16::new();
+        let mux_b = Mux16::new();
+        let mux_c = Mux16::new();
+        let mux_d = Mux16::new();
+
+        // set up mux_a
+        {
+            let not0 = NotGate::new();
+            not0.input.feed_from(result.sel[0].clone());
+
+            let not1 = NotGate::new();
+            not1.input.feed_from(result.sel[1].clone());
+
+            let and = TwoInOneOutGate::and();
+            and.input_a.feed_from(not0.output);
+            and.input_b.feed_from(not1.output);
+
+            for i in 0..16 {
+                mux_a.input_a[i].feed_from(constant_false.clone());
+                mux_a.input_b[i].feed_from(result.input_a[i].clone());
+            }
+            mux_a.sel.feed_from(and.output);
+        }
+
+        // set up mux_b
+        {
+            let not = NotGate::new();
+            not.input.feed_from(result.sel[0].clone());
+
+            let and = TwoInOneOutGate::and();
+            and.input_a.feed_from(not.output);
+            and.input_b.feed_from(result.sel[1].clone());
+
+            for i in 0..16 {
+                mux_b.input_a[i].feed_from(constant_false.clone());
+                mux_b.input_b[i].feed_from(result.input_b[i].clone());
+            }
+            mux_b.sel.feed_from(and.output);
+        }
+
+        // set up mux_c
+        {
+            let not = NotGate::new();
+            not.input.feed_from(result.sel[1].clone());
+
+            let and = TwoInOneOutGate::and();
+            and.input_a.feed_from(result.sel[0].clone());
+            and.input_b.feed_from(not.output);
+
+            for i in 0..16 {
+                mux_c.input_a[i].feed_from(constant_false.clone());
+                mux_c.input_b[i].feed_from(result.input_c[i].clone());
+            }
+            mux_c.sel.feed_from(and.output);
+        }
+
+        // set up mux_d
+        {
+            let and = TwoInOneOutGate::and();
+            and.input_a.feed_from(result.sel[0].clone());
+            and.input_b.feed_from(result.sel[1].clone());
+
+            for i in 0..16 {
+                mux_d.input_a[i].feed_from(constant_false.clone());
+                mux_d.input_b[i].feed_from(result.input_d[i].clone());
+            }
+            mux_d.sel.feed_from(and.output);
+        }
+
         let or16_b = TwoInOneOut16::or16();
+        for (idx, pin) in mux_a.output.into_iter().enumerate() {
+            or16_b.input_a[idx].feed_from(pin);
+        }
+        for (idx, pin) in mux_b.output.into_iter().enumerate() {
+            or16_b.input_b[idx].feed_from(pin);
+        }
+
         let or16_c = TwoInOneOut16::or16();
+        for (idx, pin) in mux_c.output.into_iter().enumerate() {
+            or16_c.input_a[idx].feed_from(pin);
+        }
+        for (idx, pin) in mux_d.output.into_iter().enumerate() {
+            or16_c.input_b[idx].feed_from(pin);
+        }
 
-        let mux16_a = Mux16::new();
-        let mux16_b = Mux16::new();
-        let mux16_c = Mux16::new();
-        let mux16_d = Mux16::new();
+        let or16_a = TwoInOneOut16::or16();
+        for (idx, pin) in or16_b.output.into_iter().enumerate() {
+            or16_a.input_a[idx].feed_from(pin);
+        }
+        for (idx, pin) in or16_c.output.into_iter().enumerate() {
+            or16_a.input_b[idx].feed_from(pin);
+        }
 
-        let and_a = TwoInOneOutGate::and();
-        let and_b = TwoInOneOutGate::and();
-        let and_c = TwoInOneOutGate::and();
-        let and_d = TwoInOneOutGate::and();
-
-        let not_a = NotGate::new();
-        let not_b = NotGate::new();
-        let not_c = NotGate::new();
+        for (idx, pin) in or16_a.output.into_iter().enumerate() {
+            result.output[idx].feed_from(pin);
+        }
 
         result
     }
 }
-
-// fn mux4way16(
-//     input_a: [bool; 16],
-//     input_b: [bool; 16],
-//     input_c: [bool; 16],
-//     input_d: [bool; 16],
-//     sel: [bool; 2],
-// ) -> [bool; 16] {
-//     or16a(
-//         or16b(
-//             mux16a([false; 16], input_a, anda(nota(sel[0]), notb(sel[1]))),
-//             mux16b([false; 16], input_b, andb(notc(sel[0]), sel[1])),
-//         ),
-//         or16c(
-//             mux16c([false; 16], input_c, andc(sel[0], notd(sel[1]))),
-//             mux16d([false; 16], input_d, andd(sel[0], sel[1])),
-//         ),
-//     )
-// }
 
 // fn mux8way16(
 //     input_a: [bool; 16],
