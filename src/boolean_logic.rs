@@ -45,14 +45,14 @@ impl Pin {
     }
 }
 
-struct NandGate {
+struct Gate {
     input_a: Rc<Pin>,
     input_b: Rc<Pin>,
     output: Rc<Pin>,
 }
 
-impl NandGate {
-    fn new() -> Self {
+impl Gate {
+    fn new_nand() -> Self {
         let output = Pin::new();
         let input_a = Pin::new();
         let input_b = Pin::new();
@@ -66,11 +66,38 @@ impl NandGate {
             .nand_connect(result.input_a.clone(), result.input_b.clone());
         result
     }
+
+    fn new_or() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let output = Pin::new();
+
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
+
+        let nand_a = Gate::new_nand();
+        let nand_b = Gate::new_nand();
+        let nand_c = Gate::new_nand();
+
+        result.output.connect(nand_c.output);
+        nand_c.input_a.connect(nand_a.output);
+        nand_c.input_b.connect(nand_b.output);
+
+        nand_a.input_a.connect(result.input_a.clone());
+        nand_a.input_b.connect(result.input_a.clone());
+        nand_b.input_a.connect(result.input_b.clone());
+        nand_b.input_b.connect(result.input_b.clone());
+
+        result
+    }
 }
 
 #[test]
 fn test_nand_gate() {
-    let nand_gate = NandGate::new();
+    let nand_gate = Gate::new_nand();
     nand_gate.input_a.value.set(false);
     nand_gate.input_b.value.set(false);
     nand_gate.output.compute();
@@ -95,7 +122,7 @@ impl NotGate {
     fn new() -> Self {
         let input = Pin::new();
         let output = Pin::new();
-        let nand_gate = NandGate::new();
+        let nand_gate = Gate::new_nand();
         let result = Self { input, output };
         result.output.connect(nand_gate.output);
         nand_gate.input_a.connect(result.input.clone());
@@ -131,7 +158,7 @@ impl AndGate {
             input_b,
             output,
         };
-        let nand_gate = NandGate::new();
+        let nand_gate = Gate::new_nand();
         let not_gate = NotGate::new();
         result.output.connect(not_gate.output);
         not_gate.input.connect(nand_gate.output);
@@ -159,58 +186,22 @@ fn test_and() {
     assert_eq!(and_gate.output.value.get(), false);
 }
 
-struct OrGate {
-    input_a: Rc<Pin>,
-    input_b: Rc<Pin>,
-    output: Rc<Pin>,
-}
-
-impl OrGate {
-    fn new() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
-
-        let result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-
-        let nand_a = NandGate::new();
-        let nand_b = NandGate::new();
-        let nand_c = NandGate::new();
-
-        result.output.connect(nand_c.output);
-        nand_c.input_a.connect(nand_a.output);
-        nand_c.input_b.connect(nand_b.output);
-
-        nand_a.input_a.connect(result.input_a.clone());
-        nand_a.input_b.connect(result.input_a.clone());
-        nand_b.input_a.connect(result.input_b.clone());
-        nand_b.input_b.connect(result.input_b.clone());
-
-        result
-    }
-}
-
-fn test_all_inputs(f: fn(bool, bool) -> bool) {
+fn test_all_inputs(gate: Gate, f: fn(bool, bool) -> bool) {
     let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
     for input in all_inputs {
-        or_gate.input_a.value.set(input[0]);
-        or_gate.input_b.value.set(input[1]);
-        or_gate.output.compute();
-        assert_eq!(or_gate.output.value.get(), input[0] || input[1]);
+        gate.input_a.value.set(input[0]);
+        gate.input_b.value.set(input[1]);
+        gate.output.compute();
+        assert_eq!(gate.output.value.get(), input[0] || input[1]);
     }
 }
 
 #[test]
 fn test_or() {
-    let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
-    let or_gate = OrGate::new();
-    for input in all_inputs {
-        assert_eq!(or_gate.output.value.get(), input[0] || input[1]);
+    fn or(a: bool, b: bool) -> bool {
+        a || b
     }
+    test_all_inputs(Gate::new_or(), or);
 }
 
 // // // // pub fn xor(input_a: bool, input_b: bool) -> bool {
