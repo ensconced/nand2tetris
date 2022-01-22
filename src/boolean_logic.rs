@@ -42,6 +42,8 @@ impl Pin {
 #[test]
 fn test_nand_gate() {
     let mut nand_gate = NandGate::new();
+    nand_gate.input_a.value.set(false);
+    nand_gate.input_b.value.set(false);
     nand_gate.compute();
     assert_eq!(nand_gate.output.value.get(), true);
     nand_gate.input_a.value.set(true);
