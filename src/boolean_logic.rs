@@ -1,6 +1,38 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+// TODO - might be good to use macro for this to allow different number of
+// inputs and automatically generating full set of inputs
+fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> bool) {
+    let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
+    for input in all_inputs {
+        gate.input_a.value.set(input[0]);
+        gate.input_b.value.set(input[1]);
+        gate.output.compute();
+        assert_eq!(gate.output.value.get(), f(input[0], input[1]));
+    }
+}
+
+fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool) {
+    let all_inputs = [
+        // [false, false, false],
+        // [false, false, true],
+        // [false, true, false],
+        // [false, true, true],
+        [true, false, false],
+        // [true, false, true],
+        // [true, true, false],
+        // [true, true, true],
+    ];
+    for input in all_inputs {
+        gate.input_a.value.set(input[0]);
+        gate.input_b.value.set(input[1]);
+        gate.sel.value.set(input[2]);
+        gate.output.compute();
+        assert_eq!(gate.output.value.get(), f(input[0], input[1], input[2]));
+    }
+}
+
 enum Connection {
     Eq(Rc<Pin>),
     Nand(Rc<Pin>, Rc<Pin>),
@@ -45,42 +77,38 @@ impl Pin {
     }
 }
 
-struct Gate {
+struct TwoInOneOutGate {
     input_a: Rc<Pin>,
     input_b: Rc<Pin>,
     output: Rc<Pin>,
 }
 
-impl Gate {
-    fn new_nand() -> Self {
+impl TwoInOneOutGate {
+    fn base() -> Self {
         let output = Pin::new();
         let input_a = Pin::new();
         let input_b = Pin::new();
-        let result = Self {
+        Self {
             input_a,
             input_b,
             output,
-        };
+        }
+    }
+
+    fn nand() -> Self {
+        let result = Self::base();
         result
             .output
             .nand_connect(result.input_a.clone(), result.input_b.clone());
         result
     }
 
-    fn new_or() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
+    fn or() -> Self {
+        let result = Self::base();
 
-        let result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-
-        let nand_a = Gate::new_nand();
-        let nand_b = Gate::new_nand();
-        let nand_c = Gate::new_nand();
+        let nand_a = TwoInOneOutGate::nand();
+        let nand_b = TwoInOneOutGate::nand();
+        let nand_c = TwoInOneOutGate::nand();
 
         result.output.connect(nand_c.output);
         nand_c.input_a.connect(nand_a.output);
@@ -93,16 +121,9 @@ impl Gate {
 
         result
     }
-    fn new_and() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
-        let result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-        let nand_gate = Gate::new_nand();
+    fn and() -> Self {
+        let result = Self::base();
+        let nand_gate = TwoInOneOutGate::nand();
         let not_gate = NotGate::new();
         result.output.connect(not_gate.output);
         not_gate.input.connect(nand_gate.output);
@@ -111,19 +132,13 @@ impl Gate {
         result
     }
 
-    fn new_xor() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
-        let result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-        let nand_a = Self::new_nand();
-        let nand_b = Self::new_nand();
-        let nand_c = Self::new_nand();
-        let nand_d = Self::new_nand();
+    fn xor() -> Self {
+        let result = Self::base();
+
+        let nand_a = Self::nand();
+        let nand_b = Self::nand();
+        let nand_c = Self::nand();
+        let nand_d = Self::nand();
 
         result.output.connect(nand_d.output);
         nand_d.input_a.connect(nand_b.output);
@@ -140,36 +155,26 @@ impl Gate {
 
         result
     }
-
-    fn exhaustively_test(&self, f: fn(bool, bool) -> bool) {
-        let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
-        for input in all_inputs {
-            self.input_a.value.set(input[0]);
-            self.input_b.value.set(input[1]);
-            self.output.compute();
-            assert_eq!(self.output.value.get(), f(input[0], input[1]));
-        }
-    }
 }
 
 #[test]
 fn test_nand_gate() {
-    Gate::new_nand().exhaustively_test(|a, b| !(a && b));
+    exhaustively_test_two_in_one_out(TwoInOneOutGate::nand(), |a, b| !(a && b));
 }
 
 #[test]
 fn test_and_gate() {
-    Gate::new_and().exhaustively_test(|a, b| a && b);
+    exhaustively_test_two_in_one_out(TwoInOneOutGate::and(), |a, b| a && b);
 }
 
 #[test]
 fn test_or() {
-    Gate::new_or().exhaustively_test(|a, b| a || b);
+    exhaustively_test_two_in_one_out(TwoInOneOutGate::or(), |a, b| a || b);
 }
 
 #[test]
 fn test_xor() {
-    Gate::new_xor().exhaustively_test(|a, b| a ^ b);
+    exhaustively_test_two_in_one_out(TwoInOneOutGate::xor(), |a, b| a ^ b);
 }
 
 struct NotGate {
@@ -181,7 +186,7 @@ impl NotGate {
     fn new() -> Self {
         let input = Pin::new();
         let output = Pin::new();
-        let nand_gate = Gate::new_nand();
+        let nand_gate = TwoInOneOutGate::nand();
         let result = Self { input, output };
         result.output.connect(nand_gate.output);
         nand_gate.input_a.connect(result.input.clone());
@@ -199,6 +204,51 @@ fn test_not_gate() {
     not_gate.input.value.set(false);
     not_gate.output.compute();
     assert_eq!(not_gate.output.value.get(), true);
+}
+
+struct Mux {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    sel: Rc<Pin>,
+    output: Rc<Pin>,
+}
+
+impl Mux {
+    fn new() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let sel = Pin::new();
+        let output = Pin::new();
+        let result = Self {
+            input_a,
+            input_b,
+            sel,
+            output,
+        };
+
+        let and_a = TwoInOneOutGate::and();
+        let and_b = TwoInOneOutGate::and();
+        let or = TwoInOneOutGate::or();
+        let not = NotGate::new();
+
+        result.output.connect(or.output);
+        or.input_a.connect(and_a.output);
+        or.input_b.connect(and_b.output);
+
+        and_a.input_a.connect(result.input_a.clone());
+        and_a.input_a.connect(not.output);
+        not.input.connect(result.sel.clone());
+
+        and_b.input_a.connect(result.input_b.clone());
+        and_b.input_b.connect(result.sel.clone());
+
+        result
+    }
+}
+
+#[test]
+fn test_mux() {
+    exhaustively_test_three_in_one_out(Mux::new(), |a, b, sel| if sel { b } else { a })
 }
 
 // // // // pub fn mux(input_a: bool, input_b: bool, sel: bool) -> bool {
