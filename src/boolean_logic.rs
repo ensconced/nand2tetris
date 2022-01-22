@@ -299,22 +299,24 @@ fn test_not16() {
         let not16 = Not16::new();
         not16.input.set_values(binaryi16(num));
         not16.output.compute();
-        let result = not16.output.pins.map(|pin| pin.value.get());
-        assert_eq!(result, binaryi16(!num));
+        assert_eq!(
+            not16.output.pins.map(|pin| pin.value.get()),
+            binaryi16(!num)
+        );
     }
 }
 
 struct TwoInOneOut16 {
-    input_a: [Rc<Pin>; 16],
-    input_b: [Rc<Pin>; 16],
-    output: [Rc<Pin>; 16],
+    input_a: PinArray16,
+    input_b: PinArray16,
+    output: PinArray16,
 }
 
 impl TwoInOneOut16 {
     fn base() -> Self {
-        let input_a: [Rc<Pin>; 16] = Default::default();
-        let input_b: [Rc<Pin>; 16] = Default::default();
-        let output: [Rc<Pin>; 16] = Default::default();
+        let input_a = PinArray16::new();
+        let input_b = PinArray16::new();
+        let output = PinArray16::new();
         Self {
             input_a,
             input_b,
@@ -325,9 +327,9 @@ impl TwoInOneOut16 {
         let result = Self::base();
         for i in 0..16 {
             let and = TwoInOneOutGate::and();
-            result.output[i].feed_from(and.output);
-            and.input_a.feed_from(result.input_a[i].clone());
-            and.input_b.feed_from(result.input_b[i].clone());
+            result.output.pins[i].feed_from(and.output);
+            and.input_a.feed_from(result.input_a.pins[i].clone());
+            and.input_b.feed_from(result.input_b.pins[i].clone());
         }
         result
     }
@@ -335,9 +337,9 @@ impl TwoInOneOut16 {
         let result = Self::base();
         for i in 0..16 {
             let or = TwoInOneOutGate::or();
-            result.output[i].feed_from(or.output);
-            or.input_a.feed_from(result.input_a[i].clone());
-            or.input_b.feed_from(result.input_b[i].clone());
+            result.output.pins[i].feed_from(or.output);
+            or.input_a.feed_from(result.input_a.pins[i].clone());
+            or.input_b.feed_from(result.input_b.pins[i].clone());
         }
         result
     }
@@ -345,21 +347,15 @@ impl TwoInOneOut16 {
 
 #[test]
 fn test_and16() {
-    let and16 = TwoInOneOut16::and16();
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
+            let and16 = TwoInOneOut16::and16();
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
-            for i in 0..16 {
-                and16.input_a[i].value.set(test_input_a[i]);
-                and16.input_b[i].value.set(test_input_b[i]);
-            }
-            let mut result = [false; 16];
-            for i in 0..16 {
-                let output_pin = &and16.output[i];
-                output_pin.compute();
-                result[i] = output_pin.value.get();
-            }
+            and16.input_a.set_values(test_input_a);
+            and16.input_b.set_values(test_input_b);
+            and16.output.compute();
+            let result = and16.output.pins.map(|pin| pin.value.get());
             let expected = binaryi16(num_a & num_b);
             assert_eq!(result, expected);
         }
@@ -368,21 +364,15 @@ fn test_and16() {
 
 #[test]
 fn test_or16() {
-    let or16 = TwoInOneOut16::or16();
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
+            let or16 = TwoInOneOut16::or16();
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
-            for i in 0..16 {
-                or16.input_a[i].value.set(test_input_a[i]);
-                or16.input_b[i].value.set(test_input_b[i]);
-            }
-            let mut result = [false; 16];
-            for i in 0..16 {
-                let output_pin = &or16.output[i];
-                output_pin.compute();
-                result[i] = output_pin.value.get();
-            }
+            or16.input_a.set_values(test_input_a);
+            or16.input_b.set_values(test_input_b);
+            or16.output.compute();
+            let result = or16.output.pins.map(|pin| pin.value.get());
             let expected = binaryi16(num_a | num_b);
             assert_eq!(result, expected);
         }
@@ -390,17 +380,17 @@ fn test_or16() {
 }
 
 struct Mux16 {
-    input_a: [Rc<Pin>; 16],
-    input_b: [Rc<Pin>; 16],
+    input_a: PinArray16,
+    input_b: PinArray16,
     sel: Rc<Pin>,
-    output: [Rc<Pin>; 16],
+    output: PinArray16,
 }
 
 impl Mux16 {
     fn new() -> Self {
-        let input_a: [Rc<Pin>; 16] = Default::default();
-        let input_b: [Rc<Pin>; 16] = Default::default();
-        let output: [Rc<Pin>; 16] = Default::default();
+        let input_a = PinArray16::new();
+        let input_b = PinArray16::new();
+        let output = PinArray16::new();
         let sel = Pin::new();
 
         let result = Self {
@@ -413,9 +403,9 @@ impl Mux16 {
         for i in 0..16 {
             let mux = Mux::new();
             mux.sel.feed_from(result.sel.clone());
-            mux.input_a.feed_from(result.input_a[i].clone());
-            mux.input_b.feed_from(result.input_b[i].clone());
-            result.output[i].feed_from(mux.output);
+            mux.input_a.feed_from(result.input_a.pins[i].clone());
+            mux.input_b.feed_from(result.input_b.pins[i].clone());
+            result.output.pins[i].feed_from(mux.output);
         }
 
         result
@@ -424,23 +414,17 @@ impl Mux16 {
 
 #[test]
 fn test_mux16() {
-    let mux16 = Mux16::new();
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
             for sel in [true, false] {
+                let mux16 = Mux16::new();
                 let test_input_a = binaryi16(num_a);
                 let test_input_b = binaryi16(num_b);
-                for i in 0..16 {
-                    mux16.input_a[i].value.set(test_input_a[i]);
-                    mux16.input_b[i].value.set(test_input_b[i]);
-                }
+                mux16.input_a.set_values(test_input_a);
+                mux16.input_b.set_values(test_input_b);
                 mux16.sel.value.set(sel);
-                let mut result = [false; 16];
-                for i in 0..16 {
-                    let output_pin = &mux16.output[i];
-                    output_pin.compute();
-                    result[i] = output_pin.value.get();
-                }
+                mux16.output.compute();
+                let result = mux16.output.pins.map(|pin| pin.value.get());
                 let expected = if sel { test_input_b } else { test_input_a };
                 assert_eq!(result, expected);
             }
@@ -505,22 +489,22 @@ fn test_or8way() {
 }
 
 struct Mux4Way16 {
-    input_a: [Rc<Pin>; 16],
-    input_b: [Rc<Pin>; 16],
-    input_c: [Rc<Pin>; 16],
-    input_d: [Rc<Pin>; 16],
+    input_a: PinArray16,
+    input_b: PinArray16,
+    input_c: PinArray16,
+    input_d: PinArray16,
     sel: [Rc<Pin>; 2],
-    output: [Rc<Pin>; 16],
+    output: PinArray16,
 }
 
 impl Mux4Way16 {
     fn new() -> Self {
-        let input_a: [Rc<Pin>; 16] = Default::default();
-        let input_b: [Rc<Pin>; 16] = Default::default();
-        let input_c: [Rc<Pin>; 16] = Default::default();
-        let input_d: [Rc<Pin>; 16] = Default::default();
+        let input_a = PinArray16::new();
+        let input_b = PinArray16::new();
+        let input_c = PinArray16::new();
+        let input_d = PinArray16::new();
         let sel: [Rc<Pin>; 2] = Default::default();
-        let output: [Rc<Pin>; 16] = Default::default();
+        let output = PinArray16::new();
         let result = Self {
             input_a,
             input_b,
@@ -530,7 +514,7 @@ impl Mux4Way16 {
             output,
         };
 
-        let constant_false = Pin::new();
+        let constant_false = PinArray16::new();
 
         let mux_a = Mux16::new();
         let mux_b = Mux16::new();
@@ -549,10 +533,8 @@ impl Mux4Way16 {
             and.input_a.feed_from(not0.output);
             and.input_b.feed_from(not1.output);
 
-            for i in 0..16 {
-                mux_a.input_a[i].feed_from(constant_false.clone());
-                mux_a.input_b[i].feed_from(result.input_a[i].clone());
-            }
+            mux_a.input_a.feed_from(constant_false.clone());
+            mux_a.input_b.feed_from(result.input_a.clone());
             mux_a.sel.feed_from(and.output);
         }
 
@@ -565,10 +547,8 @@ impl Mux4Way16 {
             and.input_a.feed_from(not.output);
             and.input_b.feed_from(result.sel[1].clone());
 
-            for i in 0..16 {
-                mux_b.input_a[i].feed_from(constant_false.clone());
-                mux_b.input_b[i].feed_from(result.input_b[i].clone());
-            }
+            mux_b.input_a.feed_from(constant_false.clone());
+            mux_b.input_b.feed_from(result.input_b.clone());
             mux_b.sel.feed_from(and.output);
         }
 
@@ -581,10 +561,8 @@ impl Mux4Way16 {
             and.input_a.feed_from(result.sel[0].clone());
             and.input_b.feed_from(not.output);
 
-            for i in 0..16 {
-                mux_c.input_a[i].feed_from(constant_false.clone());
-                mux_c.input_b[i].feed_from(result.input_c[i].clone());
-            }
+            mux_c.input_a.feed_from(constant_false.clone());
+            mux_c.input_b.feed_from(result.input_c.clone());
             mux_c.sel.feed_from(and.output);
         }
 
@@ -594,48 +572,30 @@ impl Mux4Way16 {
             and.input_a.feed_from(result.sel[0].clone());
             and.input_b.feed_from(result.sel[1].clone());
 
-            for i in 0..16 {
-                mux_d.input_a[i].feed_from(constant_false.clone());
-                mux_d.input_b[i].feed_from(result.input_d[i].clone());
-            }
+            mux_d.input_a.feed_from(constant_false.clone());
+            mux_d.input_b.feed_from(result.input_d.clone());
             mux_d.sel.feed_from(and.output);
         }
 
         let or16_b = TwoInOneOut16::or16();
-        for (idx, pin) in mux_a.output.into_iter().enumerate() {
-            or16_b.input_a[idx].feed_from(pin);
-        }
-        for (idx, pin) in mux_b.output.into_iter().enumerate() {
-            or16_b.input_b[idx].feed_from(pin);
-        }
+        or16_b.input_a.feed_from(mux_a.output);
+        or16_b.input_b.feed_from(mux_b.output);
 
         let or16_c = TwoInOneOut16::or16();
-        for (idx, pin) in mux_c.output.into_iter().enumerate() {
-            or16_c.input_a[idx].feed_from(pin);
-        }
-        for (idx, pin) in mux_d.output.into_iter().enumerate() {
-            or16_c.input_b[idx].feed_from(pin);
-        }
+        or16_c.input_a.feed_from(mux_c.output);
+        or16_c.input_b.feed_from(mux_d.output);
 
         let or16_a = TwoInOneOut16::or16();
-        for (idx, pin) in or16_b.output.into_iter().enumerate() {
-            or16_a.input_a[idx].feed_from(pin);
-        }
-        for (idx, pin) in or16_c.output.into_iter().enumerate() {
-            or16_a.input_b[idx].feed_from(pin);
-        }
+        or16_a.input_a.feed_from(or16_b.output);
+        or16_a.input_b.feed_from(or16_c.output);
 
-        for (idx, pin) in or16_a.output.into_iter().enumerate() {
-            result.output[idx].feed_from(pin);
-        }
-
+        result.output.feed_from(or16_a.output);
         result
     }
 }
 
 #[test]
 fn test_mux4way16() {
-    let mux = Mux4Way16::new();
     let test_cases = [
         [0, 0, 0, 0],
         [1, 1, 1, 1],
@@ -644,26 +604,16 @@ fn test_mux4way16() {
     ];
     for [num_a, num_b, num_c, num_d] in test_cases {
         for sel in [[false, false], [false, true], [true, false], [true, true]] {
-            for (i, val) in binaryi16(num_a).into_iter().enumerate() {
-                mux.input_a[i].value.set(val);
-            }
-            for (i, val) in binaryi16(num_b).into_iter().enumerate() {
-                mux.input_b[i].value.set(val);
-            }
-            for (i, val) in binaryi16(num_c).into_iter().enumerate() {
-                mux.input_c[i].value.set(val);
-            }
-            for (i, val) in binaryi16(num_d).into_iter().enumerate() {
-                mux.input_d[i].value.set(val);
-            }
+            let mux = Mux4Way16::new();
+            mux.input_a.set_values(binaryi16(num_a));
+            mux.input_b.set_values(binaryi16(num_b));
+            mux.input_c.set_values(binaryi16(num_c));
+            mux.input_d.set_values(binaryi16(num_d));
             for i in 0..=1 {
                 mux.sel[i].value.set(sel[i]);
             }
-            let mut result = [false; 16];
-            for i in 0..16 {
-                mux.output[i].compute();
-                result[i] = mux.output[i].value.get();
-            }
+            mux.output.compute();
+            let result = mux.output.pins.map(|pin| pin.value.get());
             let expected = if sel[0] {
                 if sel[1] {
                     binaryi16(num_d)
