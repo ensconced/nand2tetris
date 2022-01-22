@@ -3,8 +3,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 static mut PIN_COUNT: i32 = 0;
-
-const test_nums: [i16; 6] = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
+const TEST_NUMS: [i16; 6] = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
 
 // TODO - might be good to use macro for this to allow different number of
 // inputs and automatically generating full set of inputs
@@ -352,7 +351,7 @@ impl Not16 {
 #[test]
 fn test_not16() {
     let not16 = Not16::new();
-    for num in test_nums {
+    for num in TEST_NUMS {
         let test_input = binaryi16(num);
         for i in 0..16 {
             not16.input[i].value.set(test_input[i]);
@@ -410,8 +409,8 @@ impl TwoInOneOut16 {
 #[test]
 fn test_and16() {
     let and16 = TwoInOneOut16::and16();
-    for num_a in test_nums {
-        for num_b in test_nums {
+    for num_a in TEST_NUMS {
+        for num_b in TEST_NUMS {
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
             for i in 0..16 {
@@ -433,8 +432,8 @@ fn test_and16() {
 #[test]
 fn test_or16() {
     let or16 = TwoInOneOut16::or16();
-    for num_a in test_nums {
-        for num_b in test_nums {
+    for num_a in TEST_NUMS {
+        for num_b in TEST_NUMS {
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
             for i in 0..16 {
@@ -489,8 +488,8 @@ impl Mux16 {
 #[test]
 fn test_mux16() {
     let mux16 = Mux16::new();
-    for num_a in test_nums {
-        for num_b in test_nums {
+    for num_a in TEST_NUMS {
+        for num_b in TEST_NUMS {
             for sel in [true, false] {
                 let test_input_a = binaryi16(num_a);
                 let test_input_b = binaryi16(num_b);
@@ -744,6 +743,19 @@ fn test_mux4way16() {
             assert_eq!(expected, result);
         }
     }
+}
+
+struct Mux8Way16 {
+    input_a: [Rc<Pin>; 16],
+    input_b: [Rc<Pin>; 16],
+    input_c: [Rc<Pin>; 16],
+    input_d: [Rc<Pin>; 16],
+    input_e: [Rc<Pin>; 16],
+    input_f: [Rc<Pin>; 16],
+    input_g: [Rc<Pin>; 16],
+    input_h: [Rc<Pin>; 16],
+    sel: [Rc<Pin>; 3],
+    output: [Rc<Pin>; 16],
 }
 
 // fn mux8way16(
