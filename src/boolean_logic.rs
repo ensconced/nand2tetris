@@ -22,79 +22,146 @@ impl Pin {
         self.connection.borrow_mut().replace(connection);
     }
     fn compute(&self) {
+        // TODO - this is an inefficient "pull" system - would be better
+        // to do a toposort and then "push".
         let new_value = match self.connection.borrow().as_ref() {
-            Some(Connection::Eq(pin)) => pin.value.get(),
-            Some(Connection::Nand(pin_a, pin_b)) => !(pin_a.value.get() && pin_b.value.get()),
-            None => {
-                panic!("can't compute pin without any connections");
+            Some(Connection::Eq(pin)) => {
+                pin.compute();
+                pin.value.get()
             }
+            Some(Connection::Nand(pin_a, pin_b)) => {
+                pin_a.compute();
+                pin_b.compute();
+                !(pin_a.value.get() && pin_b.value.get())
+            }
+            None => self.value.get(),
         };
         self.value.set(new_value);
     }
 }
 
-#[test]
-fn test_nand_gate() {
-    let output = Pin::new();
-    let input_a = Pin::new();
-    let input_b = Pin::new();
-    output.connect(Connection::Nand(input_a.clone(), input_b.clone()));
-    input_a.value.set(false);
-    input_b.value.set(false);
+struct NandGate {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
 }
 
-// struct NotGate {
-//     input: Rc<Pin>,
-//     output: Rc<Pin>,
-//     nand_gate: NandGate,
-// }
+impl NandGate {
+    fn new() -> Self {
+        let output = Pin::new();
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
+        result.output.connect(Connection::Nand(
+            result.input_a.clone(),
+            result.input_b.clone(),
+        ));
+        result
+    }
+}
 
-// impl NotGate {
-//     fn new() -> Self {
-//         let input = Pin::new();
-//         let output = Pin::new();
-//         let nand_gate = NandGate::new();
-//         let result = Self {
-//             input,
-//             output,
-//             nand_gate,
-//         };
-//         result.output.connect(&result.nand_gate.output);
-//         result.nand_gate.input_a.connect(&result.input);
-//         result.nand_gate.input_b.connect(&result.input);
-//         result
-//     }
-// }
+#[test]
+fn test_nand_gate() {
+    let nand_gate = NandGate::new();
+    nand_gate.input_a.value.set(false);
+    nand_gate.input_b.value.set(false);
+    nand_gate.output.compute();
+    assert_eq!(nand_gate.output.value.get(), true);
+    nand_gate.input_a.value.set(true);
+    nand_gate.output.compute();
+    assert_eq!(nand_gate.output.value.get(), true);
+    nand_gate.input_b.value.set(true);
+    nand_gate.output.compute();
+    assert_eq!(nand_gate.output.value.get(), false);
+    nand_gate.input_a.value.set(false);
+    nand_gate.output.compute();
+    assert_eq!(nand_gate.output.value.get(), true);
+}
 
-// #[test]
-// fn test_not_gate() {
-//     let not_gate = NotGate::new();
-// }
+struct NotGate {
+    input: Rc<Pin>,
+    output: Rc<Pin>,
+}
 
-// // struct AndGate {
-// //     input_a: Rc<Pin>,
-// //     input_b: Rc<Pin>,
-// //     output: Rc<Pin>,
-// // }
+impl NotGate {
+    fn new() -> Self {
+        let input = Pin::new();
+        let output = Pin::new();
+        let nand_gate = NandGate::new();
+        let result = Self { input, output };
+        result.output.connect(Connection::Eq(nand_gate.output));
+        nand_gate
+            .input_a
+            .connect(Connection::Eq(result.input.clone()));
+        nand_gate
+            .input_b
+            .connect(Connection::Eq(result.input.clone()));
+        result
+    }
+}
 
-// // impl AndGate {
-// //     fn new() -> Self {
-// //         let input_a = Rc::new(Pin::new());
-// //         let input_b = Rc::new(Pin::new());
-// //         let output = Rc::new(Pin::new());
-// //         let nand_gate = NandGate::new();
-// //         let not_gate = NotGate::new();
-// //         input_a.connect(nand_gate.input_a);
-// //         input_b.connect(nand_gate.input_b);
-// //         nand_gate.output.connect(not_gate.input);
-// //         not_gate.output.connect(output.clone());
-// //         Self {
-// //             input_a,
-// //             input_b,
-// //             output,
-// //         }
-// //     }
-// // }
+#[test]
+fn test_not_gate() {
+    let not_gate = NotGate::new();
+    not_gate.input.value.set(true);
+    not_gate.output.compute();
+    assert_eq!(not_gate.output.value.get(), false);
+    not_gate.input.value.set(false);
+    not_gate.output.compute();
+    assert_eq!(not_gate.output.value.get(), true);
+}
+
+struct AndGate {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
+}
+
+impl AndGate {
+    fn new() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let output = Pin::new();
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
+        let nand_gate = NandGate::new();
+        let not_gate = NotGate::new();
+        result.output.connect(Connection::Eq(not_gate.output));
+        not_gate.input.connect(Connection::Eq(nand_gate.output));
+        nand_gate
+            .input_a
+            .connect(Connection::Eq(result.input_a.clone()));
+        nand_gate
+            .input_b
+            .connect(Connection::Eq(result.input_b.clone()));
+        result
+    }
+}
+
+#[test]
+fn test_and() {
+    let and_gate = AndGate::new();
+    and_gate.input_a.value.set(false);
+    and_gate.input_b.value.set(false);
+    and_gate.output.compute();
+    assert_eq!(and_gate.output.value.get(), false);
+    and_gate.input_a.value.set(true);
+    and_gate.output.compute();
+    assert_eq!(and_gate.output.value.get(), false);
+    and_gate.input_b.value.set(true);
+    and_gate.output.compute();
+    assert_eq!(and_gate.output.value.get(), true);
+    and_gate.input_a.value.set(false);
+    and_gate.output.compute();
+    assert_eq!(and_gate.output.value.get(), false);
+}
 
 // // struct OrGate {
 // //     input_a: Rc<Pin>,
@@ -347,14 +414,6 @@ fn test_nand_gate() {
 // // // //     fn test_not() {
 // // // //         assert_eq!(not(true), false);
 // // // //         assert_eq!(not(false), true);
-// // // //     }
-
-// // // //     #[test]
-// // // //     fn test_and() {
-// // // //         assert_eq!(and(false, false), false);
-// // // //         assert_eq!(and(false, true), false);
-// // // //         assert_eq!(and(true, false), false);
-// // // //         assert_eq!(and(true, true), true);
 // // // //     }
 
 // // // //     #[test]
