@@ -194,9 +194,24 @@ impl OrGate {
     }
 }
 
-// // // // pub fn or(input_a: bool, input_b: bool) -> bool {
-// // // //     nand(nand(input_a, input_a), nand(input_b, input_b))
-// // // // }
+fn test_all_inputs(f: fn(bool, bool) -> bool) {
+    let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
+    for input in all_inputs {
+        or_gate.input_a.value.set(input[0]);
+        or_gate.input_b.value.set(input[1]);
+        or_gate.output.compute();
+        assert_eq!(or_gate.output.value.get(), input[0] || input[1]);
+    }
+}
+
+#[test]
+fn test_or() {
+    let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
+    let or_gate = OrGate::new();
+    for input in all_inputs {
+        assert_eq!(or_gate.output.value.get(), input[0] || input[1]);
+    }
+}
 
 // // // // pub fn xor(input_a: bool, input_b: bool) -> bool {
 // // // //     nand(
