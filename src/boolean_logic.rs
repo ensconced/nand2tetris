@@ -2,47 +2,40 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 struct NandGate {
-    input_a: bool,
-    input_b: bool,
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
     output: Rc<Pin>,
 }
 
 impl NandGate {
     fn new() -> Self {
         Self {
-            input_a: false,
-            input_b: false,
+            input_a: Pin::new(),
+            input_b: Pin::new(),
             output: Pin::new(),
         }
     }
 
     fn compute(&mut self) {
-        self.output.value.set(!(self.input_a && self.input_b))
+        self.output
+            .value
+            .replace(!(self.input_a.value.get() && self.input_b.value.get()));
     }
 }
 struct Pin {
     value: Cell<bool>,
-    pin_connections: RefCell<Vec<Rc<Pin>>>,
-    nand_input_a_connections: RefCell<Vec<Rc<NandGate>>>,
-    nand_input_b_connections: RefCell<Vec<Rc<NandGate>>>,
+    connections: RefCell<Vec<Rc<Pin>>>,
 }
 
 impl Pin {
     fn new() -> Rc<Self> {
         Rc::new(Self {
             value: Cell::new(false),
-            pin_connections: RefCell::new(vec![]),
-            nand_input_a_connections: RefCell::new(vec![]),
-            nand_input_b_connections: RefCell::new(vec![]),
+            connections: RefCell::new(vec![]),
         })
     }
-    fn connect_pin(&self, pin: Rc<Pin>) {
-        self.pin_connections.borrow_mut().push(pin.clone());
-    }
-    fn connect_nand(&self, nand: Rc<NandGate>) {
-        self.nand_input_a_connections
-            .borrow_mut()
-            .push(nand.clone());
+    fn connect(&self, pin: &Rc<Pin>) {
+        self.connections.borrow_mut().push(pin.clone());
     }
 }
 
@@ -70,26 +63,24 @@ struct NotGate {
 
 impl NotGate {
     fn new() -> Self {
-        let nand_gate = NandGate::new();
-        let output = Pin::new();
         let input = Pin::new();
+        let output = Pin::new();
+        let nand_gate = NandGate::new();
         let result = Self {
             input,
             output,
             nand_gate,
         };
-        result.input.connect_pin(result.nand_gate.input_a.clone());
-        result.input.connect_pin(result.nand_gate.input_b.clone());
+        result.output.connect(&result.nand_gate.output);
+        result.nand_gate.input_a.connect(&result.input);
+        result.nand_gate.input_b.connect(&result.input);
         result
     }
 }
 
-fn dagCompute(input_pins: Vec<Rc<Pin>>) {}
-
 #[test]
 fn test_not_gate() {
     let not_gate = NotGate::new();
-    dagCompute(vec![not_gate.input]);
 }
 
 // struct AndGate {
