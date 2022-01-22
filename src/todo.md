@@ -1,3 +1,5 @@
+pare down long eq chains?
+
 check out Pin type from std for self-referential structs?
 https://www.youtube.com/watch?v=DkMwYxfSYNQ
 

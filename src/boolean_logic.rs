@@ -568,6 +568,54 @@ fn test_or8way() {
     }
 }
 
+struct Mux4Way16 {
+    input_a: [Rc<Pin>; 16],
+    input_b: [Rc<Pin>; 16],
+    input_c: [Rc<Pin>; 16],
+    input_d: [Rc<Pin>; 16],
+    sel: [Rc<Pin>; 2],
+    output: [Rc<Pin>; 16],
+}
+
+impl Mux4Way16 {
+    fn new() -> Self {
+        let input_a: [Rc<Pin>; 16] = Default::default();
+        let input_b: [Rc<Pin>; 16] = Default::default();
+        let input_c: [Rc<Pin>; 16] = Default::default();
+        let input_d: [Rc<Pin>; 16] = Default::default();
+        let sel: [Rc<Pin>; 2] = Default::default();
+        let output: [Rc<Pin>; 16] = Default::default();
+        let result = Self {
+            input_a,
+            input_b,
+            input_c,
+            input_d,
+            sel,
+            output,
+        };
+
+        let or16_a = TwoInOneOut16::or16();
+        let or16_b = TwoInOneOut16::or16();
+        let or16_c = TwoInOneOut16::or16();
+
+        let mux16_a = Mux16::new();
+        let mux16_b = Mux16::new();
+        let mux16_c = Mux16::new();
+        let mux16_d = Mux16::new();
+
+        let and_a = TwoInOneOutGate::and();
+        let and_b = TwoInOneOutGate::and();
+        let and_c = TwoInOneOutGate::and();
+        let and_d = TwoInOneOutGate::and();
+
+        let not_a = NotGate::new();
+        let not_b = NotGate::new();
+        let not_c = NotGate::new();
+
+        result
+    }
+}
+
 // fn mux4way16(
 //     input_a: [bool; 16],
 //     input_b: [bool; 16],
@@ -575,14 +623,14 @@ fn test_or8way() {
 //     input_d: [bool; 16],
 //     sel: [bool; 2],
 // ) -> [bool; 16] {
-//     or16(
-//         or16(
-//             mux16([false; 16], input_a, and(not(sel[0]), not(sel[1]))),
-//             mux16([false; 16], input_b, and(not(sel[0]), sel[1])),
+//     or16a(
+//         or16b(
+//             mux16a([false; 16], input_a, anda(nota(sel[0]), notb(sel[1]))),
+//             mux16b([false; 16], input_b, andb(notc(sel[0]), sel[1])),
 //         ),
-//         or16(
-//             mux16([false; 16], input_c, and(sel[0], not(sel[1]))),
-//             mux16([false; 16], input_d, and(sel[0], sel[1])),
+//         or16c(
+//             mux16c([false; 16], input_c, andc(sel[0], notd(sel[1]))),
+//             mux16d([false; 16], input_d, andd(sel[0], sel[1])),
 //         ),
 //     )
 // }
