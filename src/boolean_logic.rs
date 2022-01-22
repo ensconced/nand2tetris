@@ -1,8 +1,8 @@
+use crate::pin::Pin;
 use crate::utils::{binaryi16, binaryu8};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-static mut PIN_COUNT: i32 = 0;
 const TEST_NUMS: [i16; 6] = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
 
 // TODO - might be good to use macro for this to allow different number of
@@ -47,61 +47,6 @@ fn exhaustively_test_two_in_two_out(gate: DMux, f: fn(bool, bool) -> [bool; 2]) 
         let expected = f(input[0], input[1]);
         assert_eq!(gate.output_a.value.get(), expected[0]);
         assert_eq!(gate.output_b.value.get(), expected[1]);
-    }
-}
-
-#[derive(Debug)]
-enum Connection {
-    Eq(Rc<Pin>),
-    Nand(Rc<Pin>, Rc<Pin>),
-}
-
-#[derive(Debug, Default)]
-struct Pin {
-    debug_id: i32,
-    value: Cell<bool>,
-    connection: RefCell<Option<Connection>>,
-}
-
-impl Pin {
-    fn new() -> Rc<Self> {
-        unsafe {
-            PIN_COUNT += 1;
-            Rc::new(Self {
-                debug_id: PIN_COUNT,
-                value: Cell::new(false),
-                connection: RefCell::new(None),
-            })
-        }
-    }
-    fn feed_from(&self, pin: Rc<Pin>) {
-        let mut connection = self.connection.borrow_mut();
-        if connection.as_ref().is_some() {
-            panic!("pin is already connected");
-        }
-        connection.replace(Connection::Eq(pin));
-    }
-    fn nand_connect(&self, input_a: Rc<Pin>, input_b: Rc<Pin>) {
-        self.connection
-            .borrow_mut()
-            .replace(Connection::Nand(input_a, input_b));
-    }
-    fn compute(&self) {
-        // TODO - this is an inefficient "pull" system - would be better
-        // to do a toposort and then "push".
-        let new_value = match self.connection.borrow().as_ref() {
-            Some(Connection::Eq(pin)) => {
-                pin.compute();
-                pin.value.get()
-            }
-            Some(Connection::Nand(pin_a, pin_b)) => {
-                pin_a.compute();
-                pin_b.compute();
-                !(pin_a.value.get() && pin_b.value.get())
-            }
-            None => self.value.get(),
-        };
-        self.value.set(new_value);
     }
 }
 
