@@ -1,7 +1,9 @@
-pare down long eq chains?
+performance ideas
 
-check out Pin type from std for self-referential structs?
-https://www.youtube.com/watch?v=DkMwYxfSYNQ
+- profiling!
+- push instead of pull by doing toposort then reversing
+- when pushing, use transactions when setting full set of inputs to avoid multiplying work
+- pare down long eq chains
 
 ownership scheme:
 
