@@ -18,8 +18,13 @@ impl Pin {
             connection: RefCell::new(None),
         })
     }
-    fn connect(&self, connection: Connection) {
-        self.connection.borrow_mut().replace(connection);
+    fn connect(&self, pin: Rc<Pin>) {
+        self.connection.borrow_mut().replace(Connection::Eq(pin));
+    }
+    fn nand_connect(&self, input_a: Rc<Pin>, input_b: Rc<Pin>) {
+        self.connection
+            .borrow_mut()
+            .replace(Connection::Nand(input_a, input_b));
     }
     fn compute(&self) {
         // TODO - this is an inefficient "pull" system - would be better
@@ -56,10 +61,9 @@ impl NandGate {
             input_b,
             output,
         };
-        result.output.connect(Connection::Nand(
-            result.input_a.clone(),
-            result.input_b.clone(),
-        ));
+        result
+            .output
+            .nand_connect(result.input_a.clone(), result.input_b.clone());
         result
     }
 }
@@ -93,13 +97,9 @@ impl NotGate {
         let output = Pin::new();
         let nand_gate = NandGate::new();
         let result = Self { input, output };
-        result.output.connect(Connection::Eq(nand_gate.output));
-        nand_gate
-            .input_a
-            .connect(Connection::Eq(result.input.clone()));
-        nand_gate
-            .input_b
-            .connect(Connection::Eq(result.input.clone()));
+        result.output.connect(nand_gate.output);
+        nand_gate.input_a.connect(result.input.clone());
+        nand_gate.input_b.connect(result.input.clone());
         result
     }
 }
@@ -133,14 +133,10 @@ impl AndGate {
         };
         let nand_gate = NandGate::new();
         let not_gate = NotGate::new();
-        result.output.connect(Connection::Eq(not_gate.output));
-        not_gate.input.connect(Connection::Eq(nand_gate.output));
-        nand_gate
-            .input_a
-            .connect(Connection::Eq(result.input_a.clone()));
-        nand_gate
-            .input_b
-            .connect(Connection::Eq(result.input_b.clone()));
+        result.output.connect(not_gate.output);
+        not_gate.input.connect(nand_gate.output);
+        nand_gate.input_a.connect(result.input_a.clone());
+        nand_gate.input_b.connect(result.input_b.clone());
         result
     }
 }
@@ -163,39 +159,40 @@ fn test_and() {
     assert_eq!(and_gate.output.value.get(), false);
 }
 
-// // struct OrGate {
-// //     input_a: Rc<Pin>,
-// //     input_b: Rc<Pin>,
-// //     output: Rc<Pin>,
-// // }
+struct OrGate {
+    input_a: Rc<Pin>,
+    input_b: Rc<Pin>,
+    output: Rc<Pin>,
+}
 
-// // impl OrGate {
-// //     fn new() -> Self {
-// //         let input_a = Rc::new(Pin::new());
-// //         let input_b = Rc::new(Pin::new());
-// //         let output = Rc::new(Pin::new());
+impl OrGate {
+    fn new() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let output = Pin::new();
 
-// //         let nand_a = NandGate::new();
-// //         let nand_b = NandGate::new();
-// //         let nand_c = NandGate::new();
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
 
-// //         input_a.connect(nand_a.input_a);
-// //         input_a.connect(nand_a.input_b);
+        let nand_a = NandGate::new();
+        let nand_b = NandGate::new();
+        let nand_c = NandGate::new();
 
-// //         input_b.connect(nand_b.input_a);
-// //         input_b.connect(nand_b.input_b);
+        result.output.connect(nand_c.output);
+        nand_c.input_a.connect(nand_a.output);
+        nand_c.input_b.connect(nand_b.output);
 
-// //         nand_a.output.connect(nand_c.input_a);
-// //         nand_b.output.connect(nand_c.input_b);
-// //         nand_c.output.connect(output.clone());
+        nand_a.input_a.connect(result.input_a.clone());
+        nand_a.input_b.connect(result.input_a.clone());
+        nand_b.input_a.connect(result.input_b.clone());
+        nand_b.input_b.connect(result.input_b.clone());
 
-// //         Self {
-// //             input_a,
-// //             input_b,
-// //             output,
-// //         }
-// //     }
-// // }
+        result
+    }
+}
 
 // // // // pub fn or(input_a: bool, input_b: bool) -> bool {
 // // // //     nand(nand(input_a, input_a), nand(input_b, input_b))
