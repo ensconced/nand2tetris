@@ -1,4 +1,4 @@
-use crate::pin::Pin;
+use crate::pin::{Pin, PinArray16};
 use crate::utils::{binaryi16, binaryu8};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -275,19 +275,19 @@ fn test_dmux() {
 }
 
 struct Not16 {
-    input: [Rc<Pin>; 16],
-    output: [Rc<Pin>; 16],
+    input: PinArray16,
+    output: PinArray16,
 }
 
 impl Not16 {
     fn new() -> Self {
-        let input: [Rc<Pin>; 16] = Default::default();
-        let output: [Rc<Pin>; 16] = Default::default();
+        let input = PinArray16::new();
+        let output = PinArray16::new();
         let result = Self { input, output };
         for i in 0..16 {
             let not = NotGate::new();
-            result.output[i].feed_from(not.output);
-            not.input.feed_from(result.input[i].clone());
+            result.output.pins[i].feed_from(not.output);
+            not.input.feed_from(result.input.pins[i].clone());
         }
         result
     }
@@ -295,18 +295,14 @@ impl Not16 {
 
 #[test]
 fn test_not16() {
-    let not16 = Not16::new();
     for num in TEST_NUMS {
+        let not16 = Not16::new();
         let test_input = binaryi16(num);
         for i in 0..16 {
-            not16.input[i].value.set(test_input[i]);
+            not16.input.pins[i].value.set(test_input[i]);
         }
-        let mut result = [false; 16];
-        for i in 0..16 {
-            let output_pin = &not16.output[i];
-            output_pin.compute();
-            result[i] = output_pin.value.get();
-        }
+        not16.output.compute();
+        let result = not16.output.pins.map(|pin| pin.value.get());
         let expected = binaryi16(!num);
         assert_eq!(result, expected);
     }

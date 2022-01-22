@@ -57,3 +57,34 @@ impl Pin {
         self.value.set(new_value);
     }
 }
+
+pub struct PinArray16 {
+    pub pins: [Rc<Pin>; 16],
+}
+
+impl PinArray16 {
+    pub fn new() -> Self {
+        let pins: [Rc<Pin>; 16] = Default::default();
+        Self { pins }
+    }
+
+    pub fn feed_from(&self, other: Self) {
+        for (i, pin) in other.pins.into_iter().enumerate() {
+            self.pins[i].feed_from(pin);
+        }
+    }
+
+    pub fn compute(&self) {
+        for pin in &self.pins {
+            pin.compute();
+        }
+    }
+
+    pub fn clone(&self) -> Self {
+        let mut pins: [Rc<Pin>; 16] = Default::default();
+        for i in 0..16 {
+            pins[i] = self.pins[i].clone();
+        }
+        Self { pins }
+    }
+}
