@@ -80,6 +80,12 @@ impl PinArray16 {
         }
     }
 
+    pub fn set_values(&self, values: [bool; 16]) {
+        for i in 0..16 {
+            self.pins[i].value.set(values[i]);
+        }
+    }
+
     pub fn clone(&self) -> Self {
         let mut pins: [Rc<Pin>; 16] = Default::default();
         for i in 0..16 {

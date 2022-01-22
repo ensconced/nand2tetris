@@ -298,13 +298,10 @@ fn test_not16() {
     for num in TEST_NUMS {
         let not16 = Not16::new();
         let test_input = binaryi16(num);
-        for i in 0..16 {
-            not16.input.pins[i].value.set(test_input[i]);
-        }
+        not16.input.set_values(test_input);
         not16.output.compute();
         let result = not16.output.pins.map(|pin| pin.value.get());
-        let expected = binaryi16(!num);
-        assert_eq!(result, expected);
+        assert_eq!(result, binaryi16(!num));
     }
 }
 
