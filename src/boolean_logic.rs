@@ -1,21 +1,31 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+fn toposort(input_pins: Vec<Rc<Pin>>) -> Vec<DagMember> {
+    todo!();
+}
+
+enum DagMember {
+    PinNode(Rc<Pin>),
+    NandNode(Rc<NandGate>),
+}
+
 struct Pin {
     value: Cell<bool>,
-    connected_pins: RefCell<Vec<Rc<Pin>>>,
+    connections: RefCell<Vec<Rc<Pin>>>,
 }
 
 impl Pin {
     fn new() -> Rc<Self> {
         Rc::new(Self {
             value: Cell::new(false),
-            connected_pins: RefCell::new(vec![]),
+            connections: RefCell::new(vec![]),
         })
     }
     fn connect(&self, pin: Rc<Pin>) {
-        self.connected_pins.borrow_mut().push(pin.clone());
+        self.connections.borrow_mut().push(pin.clone());
     }
+    fn compute(&mut self) {}
 }
 
 struct NandGate {
