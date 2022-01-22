@@ -12,20 +12,24 @@ enum DagMember {
 
 struct Pin {
     value: Cell<bool>,
-    connections: RefCell<Vec<Rc<Pin>>>,
+    pin_connections: RefCell<Vec<Rc<Pin>>>,
+    nand_connections: RefCell<Vec<Rc<NandGate>>>,
 }
 
 impl Pin {
     fn new() -> Rc<Self> {
         Rc::new(Self {
             value: Cell::new(false),
-            connections: RefCell::new(vec![]),
+            pin_connections: RefCell::new(vec![]),
+            nand_connections: RefCell::new(vec![]),
         })
     }
-    fn connect(&self, pin: Rc<Pin>) {
-        self.connections.borrow_mut().push(pin.clone());
+    fn connect_pin(&self, pin: Rc<Pin>) {
+        self.pin_connections.borrow_mut().push(pin.clone());
     }
-    fn compute(&mut self) {}
+    fn connect_nand(&self, nand: Rc<NandGate>) {
+        self.nand_connections.borrow_mut().push(nand.clone());
+    }
 }
 
 struct NandGate {
@@ -76,8 +80,8 @@ impl NotGate {
     fn new() -> Self {
         let nand_gate = NandGate::new();
         let input = Pin::new();
-        input.connect(nand_gate.input_a.clone());
-        input.connect(nand_gate.input_b.clone());
+        input.connect_pin(nand_gate.input_a.clone());
+        input.connect_pin(nand_gate.input_b.clone());
         Self {
             input,
             output: nand_gate.output.clone(),
