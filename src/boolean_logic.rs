@@ -1,6 +1,8 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+static mut PIN_COUNT: i32 = 0;
+
 // TODO - might be good to use macro for this to allow different number of
 // inputs and automatically generating full set of inputs
 fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> bool) {
@@ -33,22 +35,29 @@ fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool
     }
 }
 
+#[derive(Debug)]
 enum Connection {
     Eq(Rc<Pin>),
     Nand(Rc<Pin>, Rc<Pin>),
 }
 
+#[derive(Debug)]
 struct Pin {
+    debug_id: i32,
     value: Cell<bool>,
     connection: RefCell<Option<Connection>>,
 }
 
 impl Pin {
     fn new() -> Rc<Self> {
-        Rc::new(Self {
-            value: Cell::new(false),
-            connection: RefCell::new(None),
-        })
+        unsafe {
+            PIN_COUNT += 1;
+            Rc::new(Self {
+                debug_id: PIN_COUNT,
+                value: Cell::new(false),
+                connection: RefCell::new(None),
+            })
+        }
     }
     fn connect(&self, pin: Rc<Pin>) {
         self.connection.borrow_mut().replace(Connection::Eq(pin));
@@ -236,7 +245,7 @@ impl Mux {
         or.input_b.connect(and_b.output);
 
         and_a.input_a.connect(result.input_a.clone());
-        and_a.input_a.connect(not.output);
+        and_a.input_b.connect(not.output);
         not.input.connect(result.sel.clone());
 
         and_b.input_a.connect(result.input_b.clone());
@@ -248,12 +257,10 @@ impl Mux {
 
 #[test]
 fn test_mux() {
-    exhaustively_test_three_in_one_out(Mux::new(), |a, b, sel| if sel { b } else { a })
+    let mux = Mux::new();
+    eprintln!("{:#?}", mux.output);
+    exhaustively_test_three_in_one_out(mux, |a, b, sel| if sel { b } else { a })
 }
-
-// // // // pub fn mux(input_a: bool, input_b: bool, sel: bool) -> bool {
-// // // //     or(and(input_a, not(sel)), and(input_b, sel))
-// // // // }
 
 // // // // fn dmux(input: bool, sel: bool) -> [bool; 2] {
 // // // //     [and(not(sel), input), and(sel, input)]
