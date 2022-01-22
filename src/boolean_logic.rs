@@ -93,6 +93,16 @@ impl Gate {
 
         result
     }
+
+    fn test(&self, f: fn(bool, bool) -> bool) {
+        let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
+        for input in all_inputs {
+            self.input_a.value.set(input[0]);
+            self.input_b.value.set(input[1]);
+            self.output.compute();
+            assert_eq!(self.output.value.get(), f(input[0], input[1]));
+        }
+    }
 }
 
 #[test]
@@ -186,22 +196,9 @@ fn test_and() {
     assert_eq!(and_gate.output.value.get(), false);
 }
 
-fn test_all_inputs(gate: Gate, f: fn(bool, bool) -> bool) {
-    let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
-    for input in all_inputs {
-        gate.input_a.value.set(input[0]);
-        gate.input_b.value.set(input[1]);
-        gate.output.compute();
-        assert_eq!(gate.output.value.get(), input[0] || input[1]);
-    }
-}
-
 #[test]
 fn test_or() {
-    fn or(a: bool, b: bool) -> bool {
-        a || b
-    }
-    test_all_inputs(Gate::new_or(), or);
+    Gate::new_or().test(|a, b| a || b);
 }
 
 // // // // pub fn xor(input_a: bool, input_b: bool) -> bool {
