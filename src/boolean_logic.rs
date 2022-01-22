@@ -297,8 +297,7 @@ impl Not16 {
 fn test_not16() {
     for num in TEST_NUMS {
         let not16 = Not16::new();
-        let test_input = binaryi16(num);
-        not16.input.set_values(test_input);
+        not16.input.set_values(binaryi16(num));
         not16.output.compute();
         let result = not16.output.pins.map(|pin| pin.value.get());
         assert_eq!(result, binaryi16(!num));
