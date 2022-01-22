@@ -93,8 +93,55 @@ impl Gate {
 
         result
     }
+    fn new_and() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let output = Pin::new();
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
+        let nand_gate = Gate::new_nand();
+        let not_gate = NotGate::new();
+        result.output.connect(not_gate.output);
+        not_gate.input.connect(nand_gate.output);
+        nand_gate.input_a.connect(result.input_a.clone());
+        nand_gate.input_b.connect(result.input_b.clone());
+        result
+    }
 
-    fn test(&self, f: fn(bool, bool) -> bool) {
+    fn new_xor() -> Self {
+        let input_a = Pin::new();
+        let input_b = Pin::new();
+        let output = Pin::new();
+        let result = Self {
+            input_a,
+            input_b,
+            output,
+        };
+        let nand_a = Self::new_nand();
+        let nand_b = Self::new_nand();
+        let nand_c = Self::new_nand();
+        let nand_d = Self::new_nand();
+
+        result.output.connect(nand_d.output);
+        nand_d.input_a.connect(nand_b.output);
+        nand_d.input_b.connect(nand_c.output);
+
+        nand_b.input_a.connect(result.input_a.clone());
+        nand_b.input_b.connect(nand_a.output.clone());
+
+        nand_c.input_b.connect(result.input_b.clone());
+        nand_c.input_a.connect(nand_a.output);
+
+        nand_a.input_a.connect(result.input_a.clone());
+        nand_a.input_b.connect(result.input_b.clone());
+
+        result
+    }
+
+    fn exhaustively_test(&self, f: fn(bool, bool) -> bool) {
         let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
         for input in all_inputs {
             self.input_a.value.set(input[0]);
@@ -107,20 +154,22 @@ impl Gate {
 
 #[test]
 fn test_nand_gate() {
-    let nand_gate = Gate::new_nand();
-    nand_gate.input_a.value.set(false);
-    nand_gate.input_b.value.set(false);
-    nand_gate.output.compute();
-    assert_eq!(nand_gate.output.value.get(), true);
-    nand_gate.input_a.value.set(true);
-    nand_gate.output.compute();
-    assert_eq!(nand_gate.output.value.get(), true);
-    nand_gate.input_b.value.set(true);
-    nand_gate.output.compute();
-    assert_eq!(nand_gate.output.value.get(), false);
-    nand_gate.input_a.value.set(false);
-    nand_gate.output.compute();
-    assert_eq!(nand_gate.output.value.get(), true);
+    Gate::new_nand().exhaustively_test(|a, b| !(a && b));
+}
+
+#[test]
+fn test_and_gate() {
+    Gate::new_and().exhaustively_test(|a, b| a && b);
+}
+
+#[test]
+fn test_or() {
+    Gate::new_or().exhaustively_test(|a, b| a || b);
+}
+
+#[test]
+fn test_xor() {
+    Gate::new_xor().exhaustively_test(|a, b| a ^ b);
 }
 
 struct NotGate {
@@ -151,62 +200,6 @@ fn test_not_gate() {
     not_gate.output.compute();
     assert_eq!(not_gate.output.value.get(), true);
 }
-
-struct AndGate {
-    input_a: Rc<Pin>,
-    input_b: Rc<Pin>,
-    output: Rc<Pin>,
-}
-
-impl AndGate {
-    fn new() -> Self {
-        let input_a = Pin::new();
-        let input_b = Pin::new();
-        let output = Pin::new();
-        let result = Self {
-            input_a,
-            input_b,
-            output,
-        };
-        let nand_gate = Gate::new_nand();
-        let not_gate = NotGate::new();
-        result.output.connect(not_gate.output);
-        not_gate.input.connect(nand_gate.output);
-        nand_gate.input_a.connect(result.input_a.clone());
-        nand_gate.input_b.connect(result.input_b.clone());
-        result
-    }
-}
-
-#[test]
-fn test_and() {
-    let and_gate = AndGate::new();
-    and_gate.input_a.value.set(false);
-    and_gate.input_b.value.set(false);
-    and_gate.output.compute();
-    assert_eq!(and_gate.output.value.get(), false);
-    and_gate.input_a.value.set(true);
-    and_gate.output.compute();
-    assert_eq!(and_gate.output.value.get(), false);
-    and_gate.input_b.value.set(true);
-    and_gate.output.compute();
-    assert_eq!(and_gate.output.value.get(), true);
-    and_gate.input_a.value.set(false);
-    and_gate.output.compute();
-    assert_eq!(and_gate.output.value.get(), false);
-}
-
-#[test]
-fn test_or() {
-    Gate::new_or().test(|a, b| a || b);
-}
-
-// // // // pub fn xor(input_a: bool, input_b: bool) -> bool {
-// // // //     nand(
-// // // //         nand(input_a, nand(input_a, input_b)),
-// // // //         nand(nand(input_a, input_b), input_b),
-// // // //     )
-// // // // }
 
 // // // // pub fn mux(input_a: bool, input_b: bool, sel: bool) -> bool {
 // // // //     or(and(input_a, not(sel)), and(input_b, sel))
