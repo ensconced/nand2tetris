@@ -568,7 +568,9 @@ impl Mux4Way16 {
                 let mux = Mux16::new();
                 let and = TwoInOneOutGate::and();
                 for j in 0..result.sel.len() {
-                    if i & usize::pow(2, result.sel.len() as u32 - 1 - j as u32) == 0 {
+                    let should_negate_sel_pin =
+                        i & usize::pow(2, result.sel.len() as u32 - 1 - j as u32) == 0;
+                    if should_negate_sel_pin {
                         let not = NotGate::new();
                         not.input.feed_from(result.sel[j].clone());
                         and.inputs[j].feed_from(not.output);
