@@ -478,12 +478,12 @@ fn test_or8way() {
     }
 }
 
-struct OrNWay16 {
+struct OrFunnel {
     inputs: Vec<PinArray16>,
     output: PinArray16,
 }
 
-impl OrNWay16 {
+impl OrFunnel {
     fn new(bottom_layer_or_count: usize) -> Self {
         if bottom_layer_or_count.count_ones() != 1 {
             panic!("bottom layer or count must be a power of 2");
@@ -516,44 +516,54 @@ impl OrNWay16 {
     }
 }
 
-struct Or4Way16 {
+#[test]
+fn test_or_n_way_16() {
+    let funnel = OrFunnel::new(32);
+    for pin_array in funnel.inputs.iter() {
+        pin_array.set_values([false; 16]);
+    }
+    funnel.output.compute();
+    assert_eq!(
+        funnel.output.clone().pins.map(|pin| pin.value.get()),
+        [false; 16]
+    );
+    funnel.inputs[5].set_values(i16_to_bools(123));
+    funnel.output.compute();
+    assert_eq!(
+        funnel.output.pins.map(|pin| pin.value.get()),
+        i16_to_bools(123)
+    );
+}
+
+struct OrFunnel4Way16 {
     inputs: [PinArray16; 4],
     output: PinArray16,
 }
 
-impl Or4Way16 {
+impl OrFunnel4Way16 {
     fn new() -> Self {
-        let or_n_way = OrNWay16::new(2);
+        let funnel = OrFunnel::new(2);
         Self {
-            inputs: or_n_way.inputs.try_into().unwrap(),
-            output: or_n_way.output,
+            inputs: funnel.inputs.try_into().unwrap(),
+            output: funnel.output,
         }
     }
 }
-struct Or8Way16 {
+
+struct OrFunnel8Way16 {
     inputs: [PinArray16; 8],
     output: PinArray16,
 }
 
-impl Or8Way16 {
+impl OrFunnel8Way16 {
     fn new() -> Self {
-        let or_n_way = OrNWay16::new(4);
+        let or_n_way = OrFunnel::new(4);
         Self {
             inputs: or_n_way.inputs.try_into().unwrap(),
             output: or_n_way.output,
         }
     }
 }
-
-// struct MuxNWay16 {
-//     inputs: Vec<PinArray16>,
-//     sel: Vec<Rc<Pin>>,
-//     output: PinArray16,
-// }
-
-// impl MuxNWay16 {
-
-// }
 
 struct Mux4Way16 {
     inputs: [PinArray16; 4],
@@ -599,7 +609,7 @@ impl Mux4Way16 {
             })
             .collect();
 
-        let or4way16 = Or4Way16::new();
+        let or4way16 = OrFunnel4Way16::new();
         for (idx, mux) in muxes.iter().enumerate() {
             or4way16.inputs[idx].feed_from(mux.output.clone());
         }
@@ -684,7 +694,7 @@ impl Mux8Way16 {
             })
             .collect();
 
-        let or_8_way = Or8Way16::new();
+        let or_8_way = OrFunnel8Way16::new();
         for (idx, mux) in muxes.into_iter().enumerate() {
             or_8_way.inputs[idx].feed_from(mux.output);
         }
