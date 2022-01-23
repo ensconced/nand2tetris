@@ -1,5 +1,5 @@
 use crate::pin::{Pin, PinArray16};
-use crate::utils::{binaryi16, binaryu8};
+use crate::utils::{bools_to_usize, i16_to_bools, u8_to_bools};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -293,11 +293,11 @@ impl Not16 {
 fn test_not16() {
     for num in TEST_NUMS {
         let not16 = Not16::new();
-        not16.input.set_values(binaryi16(num));
+        not16.input.set_values(i16_to_bools(num));
         not16.output.compute();
         assert_eq!(
             not16.output.pins.map(|pin| pin.value.get()),
-            binaryi16(!num)
+            i16_to_bools(!num)
         );
     }
 }
@@ -340,13 +340,13 @@ fn test_and16() {
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
             let and16 = TwoInOneOut16::and16();
-            let test_input_a = binaryi16(num_a);
-            let test_input_b = binaryi16(num_b);
+            let test_input_a = i16_to_bools(num_a);
+            let test_input_b = i16_to_bools(num_b);
             and16.inputs[0].set_values(test_input_a);
             and16.inputs[1].set_values(test_input_b);
             and16.output.compute();
             let result = and16.output.pins.map(|pin| pin.value.get());
-            let expected = binaryi16(num_a & num_b);
+            let expected = i16_to_bools(num_a & num_b);
             assert_eq!(result, expected);
         }
     }
@@ -357,13 +357,13 @@ fn test_or16() {
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
             let or16 = TwoInOneOut16::or16();
-            let test_input_a = binaryi16(num_a);
-            let test_input_b = binaryi16(num_b);
+            let test_input_a = i16_to_bools(num_a);
+            let test_input_b = i16_to_bools(num_b);
             or16.inputs[0].set_values(test_input_a);
             or16.inputs[1].set_values(test_input_b);
             or16.output.compute();
             let result = or16.output.pins.map(|pin| pin.value.get());
-            let expected = binaryi16(num_a | num_b);
+            let expected = i16_to_bools(num_a | num_b);
             assert_eq!(result, expected);
         }
     }
@@ -408,8 +408,8 @@ fn test_mux16() {
         for num_b in TEST_NUMS {
             for sel in [true, false] {
                 let mux16 = Mux16::new();
-                let test_input_a = binaryi16(num_a);
-                let test_input_b = binaryi16(num_b);
+                let test_input_a = i16_to_bools(num_a);
+                let test_input_b = i16_to_bools(num_b);
                 mux16.input_a.set_values(test_input_a);
                 mux16.input_b.set_values(test_input_b);
                 mux16.sel.value.set(sel);
@@ -469,7 +469,7 @@ fn test_or8way() {
     let or8way = Or8Way::new();
     let test_bytes = [0, 1, 2, 123, u8::MAX];
     for num in test_bytes {
-        let test_input = binaryu8(num);
+        let test_input = u8_to_bools(num);
         for i in 0..8 {
             or8way.input[i].value.set(test_input[i]);
         }
@@ -545,10 +545,34 @@ impl Or8Way16 {
     }
 }
 
+// struct MuxNWay16 {
+//     inputs: Vec<PinArray16>,
+//     sel: Vec<Rc<Pin>>,
+//     output: PinArray16,
+// }
+
+// impl MuxNWay16 {
+
+// }
+
 struct Mux4Way16 {
     inputs: [PinArray16; 4],
     sel: [Rc<Pin>; 2],
     output: PinArray16,
+}
+
+fn connect_mux_to_sel(mux_idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
+    for j in 0..sel.len() {
+        let sel_pin_bit = usize::pow(2, sel.len() as u32 - 1 - j as u32);
+        let should_negate_sel_pin = mux_idx & sel_pin_bit == 0;
+        if should_negate_sel_pin {
+            let not = NotGate::new();
+            not.input.feed_from(sel[j].clone());
+            and_inputs[j].feed_from(not.output);
+        } else {
+            and_inputs[j].feed_from(sel[j].clone());
+        }
+    }
 }
 
 impl Mux4Way16 {
@@ -567,18 +591,7 @@ impl Mux4Way16 {
             .map(|i| {
                 let mux = Mux16::new();
                 let and = TwoInOneOutGate::and();
-                for j in 0..result.sel.len() {
-                    let should_negate_sel_pin =
-                        i & usize::pow(2, result.sel.len() as u32 - 1 - j as u32) == 0;
-                    if should_negate_sel_pin {
-                        let not = NotGate::new();
-                        not.input.feed_from(result.sel[j].clone());
-                        and.inputs[j].feed_from(not.output);
-                    } else {
-                        and.inputs[j].feed_from(result.sel[j].clone());
-                    }
-                }
-
+                connect_mux_to_sel(i, &result.sel, &and.inputs);
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and.output);
@@ -606,10 +619,10 @@ fn test_mux4way16() {
     for [num_a, num_b, num_c, num_d] in test_cases {
         for sel in [[false, false], [false, true], [true, false], [true, true]] {
             let mux = Mux4Way16::new();
-            mux.inputs[0].set_values(binaryi16(num_a));
-            mux.inputs[1].set_values(binaryi16(num_b));
-            mux.inputs[2].set_values(binaryi16(num_c));
-            mux.inputs[3].set_values(binaryi16(num_d));
+            mux.inputs[0].set_values(i16_to_bools(num_a));
+            mux.inputs[1].set_values(i16_to_bools(num_b));
+            mux.inputs[2].set_values(i16_to_bools(num_c));
+            mux.inputs[3].set_values(i16_to_bools(num_d));
             for i in 0..=1 {
                 mux.sel[i].value.set(sel[i]);
             }
@@ -617,15 +630,15 @@ fn test_mux4way16() {
             let result = mux.output.pins.map(|pin| pin.value.get());
             let expected = if sel[0] {
                 if sel[1] {
-                    binaryi16(num_d)
+                    i16_to_bools(num_d)
                 } else {
-                    binaryi16(num_c)
+                    i16_to_bools(num_c)
                 }
             } else {
                 if sel[1] {
-                    binaryi16(num_b)
+                    i16_to_bools(num_b)
                 } else {
-                    binaryi16(num_a)
+                    i16_to_bools(num_a)
                 }
             };
             assert_eq!(expected, result);
@@ -663,15 +676,7 @@ impl Mux8Way16 {
                     and_b.inputs[0].clone(),
                     and_b.inputs[1].clone(),
                 ];
-                for j in 0..=2 {
-                    if i & usize::pow(2 - j, 2) == 0 {
-                        let not = NotGate::new();
-                        not.input.feed_from(result.sel[j].clone());
-                        and_inputs[j].feed_from(not.output);
-                    } else {
-                        and_inputs[j].feed_from(result.sel[j].clone());
-                    }
-                }
+                connect_mux_to_sel(i, &result.sel, &and_inputs);
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and_a.output);
@@ -689,56 +694,34 @@ impl Mux8Way16 {
     }
 }
 
-// fn mux8way16(
-//     input_a: [bool; 16],
-//     input_b: [bool; 16],
-//     input_c: [bool; 16],
-//     input_d: [bool; 16],
-//     input_e: [bool; 16],
-//     input_f: [bool; 16],
-//     input_g: [bool; 16],
-//     input_h: [bool; 16],
-//     sel: [bool; 3],
-// ) -> [bool; 16] {
-//     or16a(
-//         or16b(
-//             or16c(
-//                 mux16a(
-//                     [false; 16],
-//                     input_a,
-//                     and(not(sel[0]), and(not(sel[1]), not(sel[2]))),
-//                 ),
-//                 mux16b(
-//                     [false; 16],
-//                     input_b,
-//                     and(not(sel[0]), and(not(sel[1]), sel[2])),
-//                 ),
-//             ),
-//             or16d(
-//                 mux16c(
-//                     [false; 16],
-//                     input_c,
-//                     and(not(sel[0]), and(sel[1], not(sel[2]))),
-//                 ),
-//                 mux16d([false; 16], input_d, and(not(sel[0]), and(sel[1], sel[2]))),
-//             ),
-//         ),
-//         or16e(
-//             or16f(
-//                 mux16e(
-//                     [false; 16],
-//                     input_e,
-//                     and(sel[0], and(not(sel[1]), not(sel[2]))),
-//                 ),
-//                 mux16f([false; 16], input_f, and(sel[0], and(not(sel[1]), sel[2]))),
-//             ),
-//             or16g(
-//                 mux16g([false; 16], input_g, and(sel[0], and(sel[1], not(sel[2])))),
-//                 mux16h([false; 16], input_h, and(sel[0], and(sel[1], sel[2]))),
-//             ),
-//         ),
-//     )
-// }
+#[test]
+fn test_mux8way16() {
+    let test_cases = [
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        [i16::MIN, i16::MAX, 123, 456, 1234, -9999, 1, -1],
+    ];
+    for test_case in test_cases {
+        for sel in [
+            [false, false, false],
+            [false, true, false],
+            [true, false, false],
+            [true, true, false],
+        ] {
+            let mux = Mux8Way16::new();
+            for i in 0..8 {
+                mux.inputs[i].set_values(i16_to_bools(test_case[i]));
+            }
+            for i in 0..=2 {
+                mux.sel[i].value.set(sel[i]);
+            }
+            mux.output.compute();
+            let result = mux.output.pins.map(|pin| pin.value.get());
+            let expected = i16_to_bools(test_case[bools_to_usize(&sel)]);
+            assert_eq!(expected, result);
+        }
+    }
+}
 
 // fn dmux4way(input: bool, sel: [bool; 2]) -> [bool; 4] {
 //     [
