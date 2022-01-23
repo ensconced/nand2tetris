@@ -489,50 +489,29 @@ struct Or4Way16 {
 
 impl Or4Way16 {
     fn new() -> Self {
-        struct Layer {
-            inputs: Vec<PinArray16>,
-            outputs: Vec<PinArray16>,
-        }
-
-        let layers = vec![];
-        let mut or16s_per_layer = 2;
-
-        let add_layer = || {
-            let layer = Layer {
-                inputs: Vec::new(),
-                outputs: Vec::new(),
-            };
-            for i in 0..or16s_per_layer {
-                let or16 = TwoInOneOut16::or16();
-                layer.outputs.push(or16.output);
-                layer.inputs.extend(or16.inputs);
-            }
-            layers.push(layer);
-        };
-
-        while or16s_per_layer > 0 {
-            add_layer();
-        }
-
-        let bottom_layer = vec![TwoInOneOut16::or16(), TwoInOneOut16::or16()];
         let inputs: [PinArray16; 4] = Default::default();
         let output = PinArray16::new();
         let result = Self { inputs, output };
-        let mut layer_idx = 0;
-        let layer_outputs = vec![];
-        let layer_inputs = vec![];
-        while or16s_per_layer > 0 {
-            let layer = vec![];
-            for i in 0..or16s_per_layer {
-                let or16 = TwoInOneOut16::or16();
-                layer_inputs.extend(or16.inputs);
-                if layer_idx == 0 {
-                    result.inputs[i] = or16.inputs[0];
+
+        let or16s_in_bottom_layer = 2;
+        let mut or16s_in_current_layer = or16s_in_bottom_layer;
+        let mut inputs_for_current_layer: Vec<PinArray16> =
+            result.inputs.iter().map(|pin| pin.clone()).collect();
+        let mut layer = vec![];
+        while or16s_in_current_layer > 0 {
+            layer = vec![];
+            for _ in 0..or16s_in_current_layer {
+                layer.push(TwoInOneOut16::or16());
+            }
+            for or in layer.iter() {
+                for input in or.inputs.iter() {
+                    input.feed_from(inputs_for_current_layer.remove(0));
                 }
             }
-            or_16s.push(layer);
-            layer_idx += 1;
+            inputs_for_current_layer = layer.iter().map(|or| or.output.clone()).collect();
+            or16s_in_current_layer /= 2;
         }
+        result.output.feed_from(layer[0].output.clone());
         result
     }
 }
@@ -581,16 +560,11 @@ impl Mux4Way16 {
             })
             .collect();
 
-        let top_or16 = TwoInOneOut16::or16();
-        let bottom_or16s = vec![TwoInOneOut16::or16(), TwoInOneOut16::or16()];
-        for (idx, mux) in muxes.into_iter().enumerate() {
-            let or_idx = idx / 2;
-            bottom_or16s[or_idx].inputs[idx & 1].feed_from(mux.output);
+        let or4way16 = Or4Way16::new();
+        for (idx, mux) in muxes.iter().enumerate() {
+            or4way16.inputs[idx].feed_from(mux.output.clone());
         }
-        for (idx, bottom_or16) in bottom_or16s.into_iter().enumerate() {
-            top_or16.inputs[idx].feed_from(bottom_or16.output);
-        }
-        result.output.feed_from(top_or16.output);
+        result.output.feed_from(or4way16.output);
         result
     }
 }
@@ -633,88 +607,88 @@ fn test_mux4way16() {
     }
 }
 
-struct Mux8Way16 {
-    inputs: [PinArray16; 8],
-    sel: [Rc<Pin>; 3],
-    output: PinArray16,
-}
+// struct Mux8Way16 {
+//     inputs: [PinArray16; 8],
+//     sel: [Rc<Pin>; 3],
+//     output: PinArray16,
+// }
 
-impl Mux8Way16 {
-    fn new() -> Self {
-        let inputs: [PinArray16; 8] = Default::default();
-        let sel: [Rc<Pin>; 3] = Default::default();
-        let output = PinArray16::new();
-        let result = Self {
-            inputs,
-            sel,
-            output,
-        };
+// impl Mux8Way16 {
+//     fn new() -> Self {
+//         let inputs: [PinArray16; 8] = Default::default();
+//         let sel: [Rc<Pin>; 3] = Default::default();
+//         let output = PinArray16::new();
+//         let result = Self {
+//             inputs,
+//             sel,
+//             output,
+//         };
 
-        let constant_false = PinArray16::new();
+//         let constant_false = PinArray16::new();
 
-        let muxes: Vec<Mux16> = (0..8)
-            .map(|i| {
-                let mux = Mux16::new();
-                let and_a = TwoInOneOutGate::and();
-                let and_b = TwoInOneOutGate::and();
-                and_a.input_a.feed_from(and_b.output);
+//         let muxes: Vec<Mux16> = (0..8)
+//             .map(|i| {
+//                 let mux = Mux16::new();
+//                 let and_a = TwoInOneOutGate::and();
+//                 let and_b = TwoInOneOutGate::and();
+//                 and_a.input_a.feed_from(and_b.output);
 
-                if i & 4 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[0].clone());
-                    and_b.input_a.feed_from(not.output);
-                } else {
-                    and_b.input_a.feed_from(result.sel[0].clone());
-                }
-                if i & 2 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[1].clone());
-                    and_b.input_b.feed_from(not.output);
-                } else {
-                    and_b.input_b.feed_from(result.sel[1].clone());
-                }
-                if i & 1 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[2].clone());
-                    and_b.input_b.feed_from(not.output);
-                } else {
-                    and_b.input_b.feed_from(result.sel[2].clone());
-                }
-                mux.input_a.feed_from(constant_false.clone());
-                mux.input_b.feed_from(result.inputs[i].clone());
-                mux.sel.feed_from(and_a.output);
-                mux
-            })
-            .collect();
+//                 if i & 4 == 0 {
+//                     let not = NotGate::new();
+//                     not.input.feed_from(result.sel[0].clone());
+//                     and_b.input_a.feed_from(not.output);
+//                 } else {
+//                     and_b.input_a.feed_from(result.sel[0].clone());
+//                 }
+//                 if i & 2 == 0 {
+//                     let not = NotGate::new();
+//                     not.input.feed_from(result.sel[1].clone());
+//                     and_b.input_b.feed_from(not.output);
+//                 } else {
+//                     and_b.input_b.feed_from(result.sel[1].clone());
+//                 }
+//                 if i & 1 == 0 {
+//                     let not = NotGate::new();
+//                     not.input.feed_from(result.sel[2].clone());
+//                     and_b.input_b.feed_from(not.output);
+//                 } else {
+//                     and_b.input_b.feed_from(result.sel[2].clone());
+//                 }
+//                 mux.input_a.feed_from(constant_false.clone());
+//                 mux.input_b.feed_from(result.inputs[i].clone());
+//                 mux.sel.feed_from(and_a.output);
+//                 mux
+//             })
+//             .collect();
 
-        let mux_count = muxes.len();
-        if mux_count.count_ones() != 1 {
-            panic!("number of muxes must be a power of 2");
-        }
-        let mut components_per_layer = mux_count;
-        while components_per_layer > 0 {
-            let layer = vec![];
-            for i in 0..components_per_layer {
-                layer.push(TwoInOneOut16::or16());
-            }
-            or_16s.push(layer);
-        }
+//         let mux_count = muxes.len();
+//         if mux_count.count_ones() != 1 {
+//             panic!("number of muxes must be a power of 2");
+//         }
+//         let mut components_per_layer = mux_count;
+//         while components_per_layer > 0 {
+//             let layer = vec![];
+//             for i in 0..components_per_layer {
+//                 layer.push(TwoInOneOut16::or16());
+//             }
+//             or_16s.push(layer);
+//         }
 
-        let top_or16 = TwoInOneOut16::or16();
-        let middle_or16s = vec![];
-        let bottom_or16s = vec![];
-        for (idx, mux) in muxes.into_iter().enumerate() {
-            let middle_or_idx = idx / 2;
-            bottom_or16s[middle_or_idx].inputs[idx & 1].feed_from(mux.output);
-        }
-        for (idx, bottom_or16) in bottom_or16s.into_iter().enumerate() {
-            top_or16.inputs[idx].feed_from(bottom_or16.output);
-        }
-        result.output.feed_from(top_or16.output);
+//         let top_or16 = TwoInOneOut16::or16();
+//         let middle_or16s = vec![];
+//         let bottom_or16s = vec![];
+//         for (idx, mux) in muxes.into_iter().enumerate() {
+//             let middle_or_idx = idx / 2;
+//             bottom_or16s[middle_or_idx].inputs[idx & 1].feed_from(mux.output);
+//         }
+//         for (idx, bottom_or16) in bottom_or16s.into_iter().enumerate() {
+//             top_or16.inputs[idx].feed_from(bottom_or16.output);
+//         }
+//         result.output.feed_from(top_or16.output);
 
-        result
-    }
-}
+//         result
+//     }
+// }
 
 // fn mux8way16(
 //     input_a: [bool; 16],
