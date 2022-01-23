@@ -219,7 +219,6 @@ impl Mux {
 #[test]
 fn test_mux() {
     let mux = Mux::new();
-    eprintln!("{:#?}", mux.output);
     exhaustively_test_three_in_one_out(mux, |a, b, sel| if sel { b } else { a })
 }
 
@@ -571,10 +570,10 @@ struct Mux4Way16 {
     output: PinArray16,
 }
 
-fn connect_mux_to_sel(mux_idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
+fn select_by_idx(idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
     for j in 0..sel.len() {
         let sel_pin_bit = usize::pow(2, sel.len() as u32 - 1 - j as u32);
-        let should_negate_sel_pin = mux_idx & sel_pin_bit == 0;
+        let should_negate_sel_pin = idx & sel_pin_bit == 0;
         if should_negate_sel_pin {
             let not = NotGate::new();
             not.input.feed_from(sel[j].clone());
@@ -601,7 +600,7 @@ impl Mux4Way16 {
             .map(|i| {
                 let mux = Mux16::new();
                 let and = TwoInOneOutGate::and();
-                connect_mux_to_sel(i, &result.sel, &and.inputs);
+                select_by_idx(i, &result.sel, &and.inputs);
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and.output);
@@ -686,7 +685,7 @@ impl Mux8Way16 {
                     and_b.inputs[0].clone(),
                     and_b.inputs[1].clone(),
                 ];
-                connect_mux_to_sel(i, &result.sel, &and_inputs);
+                select_by_idx(i, &result.sel, &and_inputs);
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and_a.output);
@@ -733,177 +732,102 @@ fn test_mux8way16() {
     }
 }
 
-// fn dmux4way(input: bool, sel: [bool; 2]) -> [bool; 4] {
-//     [
-//         and(input, and(not(sel[0]), not(sel[1]))),
-//         and(input, and(not(sel[0]), sel[1])),
-//         and(input, and(sel[0], not(sel[1]))),
-//         and(input, and(sel[0], sel[1])),
-//     ]
-// }
+struct DMux4Way {
+    input: Rc<Pin>,
+    sel: [Rc<Pin>; 2],
+    outputs: [Rc<Pin>; 4],
+}
 
-// fn dmux8way(input: bool, sel: [bool; 3]) -> [bool; 8] {
-//     [
-//         and(input, and(not(sel[0]), and(not(sel[1]), not(sel[2])))),
-//         and(input, and(not(sel[0]), and(not(sel[1]), sel[2]))),
-//         and(input, and(not(sel[0]), and(sel[1], not(sel[2])))),
-//         and(input, and(not(sel[0]), and(sel[1], sel[2]))),
-//         and(input, and(sel[0], and(not(sel[1]), not(sel[2])))),
-//         and(input, and(sel[0], and(not(sel[1]), sel[2]))),
-//         and(input, and(sel[0], and(sel[1], not(sel[2])))),
-//         and(input, and(sel[0], and(sel[1], sel[2]))),
-//     ]
-// }
+impl DMux4Way {
+    fn new() -> Self {
+        let input = Pin::new();
+        let sel: [Rc<Pin>; 2] = Default::default();
+        let output: [Rc<Pin>; 4] = Default::default();
+        let result = Self {
+            input,
+            sel,
+            outputs: output,
+        };
 
-// #[cfg(test)]
-// mod tests {
-//     fn test_mux4way16() {
-//         let a = [
-//             true, false, true, false, false, true, false, true, false, false, false, true, false,
-//             true, true, false,
-//         ];
-//         let b = [
-//             false, false, true, false, true, true, false, false, true, false, true, true, false,
-//             false, false, true,
-//         ];
-//         let c = [
-//             false, false, true, true, false, false, true, true, false, true, true, false, false,
-//             true, false, true,
-//         ];
-//         let d = [
-//             true, true, false, false, true, true, false, true, false, false, false, true, true,
-//             false, false, true,
-//         ];
-//         assert_eq!(mux4way16(a, b, c, d, [false, false]), a);
-//         assert_eq!(mux4way16(a, b, c, d, [false, true]), b);
-//         assert_eq!(mux4way16(a, b, c, d, [true, false]), c);
-//         assert_eq!(mux4way16(a, b, c, d, [true, true]), d);
-//     }
+        for (idx, pin) in result.outputs.iter().enumerate() {
+            let sel_and = TwoInOneOutGate::and();
+            select_by_idx(idx, &result.sel, &sel_and.inputs);
+            let and = TwoInOneOutGate::and();
+            and.inputs[1].feed_from(sel_and.output);
+            and.inputs[0].feed_from(result.input.clone());
+            pin.feed_from(and.output);
+        }
 
-//     #[test]
-//     fn test_mux8way16() {
-//         let a = [
-//             true, false, true, false, false, true, false, true, false, false, false, true, false,
-//             true, true, false,
-//         ];
-//         let b = [
-//             false, false, true, false, true, true, false, false, true, false, true, true, false,
-//             false, false, true,
-//         ];
-//         let c = [
-//             false, false, true, true, false, false, true, true, false, true, true, false, false,
-//             true, false, true,
-//         ];
-//         let d = [
-//             true, true, false, false, true, true, false, true, false, false, false, true, true,
-//             false, false, true,
-//         ];
-//         let e = [
-//             false, false, true, true, false, true, false, false, true, false, true, false, false,
-//             true, false, false,
-//         ];
-//         let f = [
-//             true, true, true, true, false, false, false, true, false, true, false, false, false,
-//             true, false, true,
-//         ];
-//         let g = [
-//             false, true, false, true, false, false, true, true, false, true, false, false, true,
-//             false, true, true,
-//         ];
-//         let h = [
-//             false, false, false, true, true, false, true, false, true, false, false, false, true,
-//             true, false, true,
-//         ];
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [false, false, false]), a);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [false, false, true]), b);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [false, true, false]), c);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [false, true, true]), d);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [true, false, false]), e);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [true, false, true]), f);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [true, true, false]), g);
-//         assert_eq!(mux8way16(a, b, c, d, e, f, g, h, [true, true, true]), h);
-//     }
+        result
+    }
+}
 
-//     #[test]
-//     fn test_dmux4way() {
-//         assert_eq!(
-//             dmux4way(false, [false, false]),
-//             [false, false, false, false]
-//         );
-//         assert_eq!(dmux4way(false, [false, true]), [false, false, false, false]);
-//         assert_eq!(dmux4way(false, [true, false]), [false, false, false, false]);
-//         assert_eq!(dmux4way(false, [true, true]), [false, false, false, false]);
-//         assert_eq!(dmux4way(true, [false, false]), [true, false, false, false]);
-//         assert_eq!(dmux4way(true, [false, true]), [false, true, false, false]);
-//         assert_eq!(dmux4way(true, [true, false]), [false, false, true, false]);
-//         assert_eq!(dmux4way(true, [true, true]), [false, false, false, true]);
-//     }
+#[test]
+fn test_dmux_4_way() {
+    let dmux = DMux4Way::new();
+    for val in [false, true] {
+        for sel_pin_idx in 0..4 {
+            dmux.input.value.set(val);
+            dmux.sel[0].value.set(sel_pin_idx & 2 == 2);
+            dmux.sel[1].value.set(sel_pin_idx & 1 == 1);
+            for (pin_idx, output) in dmux.outputs.iter().enumerate() {
+                output.compute();
+                assert_eq!(output.value.get(), val && pin_idx == sel_pin_idx)
+            }
+        }
+    }
+}
 
-//     #[test]
-//     fn test_dmux8way() {
-//         assert_eq!(
-//             dmux8way(false, [false, false, false]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [false, false, true]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [false, true, false]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [false, true, true]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [true, false, false]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [true, false, true]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [true, true, false]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(false, [true, true, true]),
-//             [false, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [false, false, false]),
-//             [true, false, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [false, false, true]),
-//             [false, true, false, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [false, true, false]),
-//             [false, false, true, false, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [false, true, true]),
-//             [false, false, false, true, false, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [true, false, false]),
-//             [false, false, false, false, true, false, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [true, false, true]),
-//             [false, false, false, false, false, true, false, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [true, true, false]),
-//             [false, false, false, false, false, false, true, false]
-//         );
-//         assert_eq!(
-//             dmux8way(true, [true, true, true]),
-//             [false, false, false, false, false, false, false, true]
-//         );
-//     }
-// }
+struct DMux8Way {
+    input: Rc<Pin>,
+    sel: [Rc<Pin>; 3],
+    outputs: [Rc<Pin>; 8],
+}
+
+impl DMux8Way {
+    fn new() -> Self {
+        let input = Pin::new();
+        let sel: [Rc<Pin>; 3] = Default::default();
+        let outputs: [Rc<Pin>; 8] = Default::default();
+        let result = Self {
+            input,
+            sel,
+            outputs,
+        };
+
+        for (idx, pin) in result.outputs.iter().enumerate() {
+            let sel_and_a = TwoInOneOutGate::and();
+            let sel_and_b = TwoInOneOutGate::and();
+            sel_and_b.inputs[1].feed_from(sel_and_a.output);
+            let sel_inputs = [
+                sel_and_a.inputs[0].clone(),
+                sel_and_a.inputs[1].clone(),
+                sel_and_b.inputs[0].clone(),
+            ];
+            select_by_idx(idx, &result.sel, &sel_inputs);
+            let and = TwoInOneOutGate::and();
+            and.inputs[1].feed_from(sel_and_b.output);
+            and.inputs[0].feed_from(result.input.clone());
+            pin.feed_from(and.output);
+        }
+
+        result
+    }
+}
+
+#[test]
+fn test_dmux_8_way() {
+    let dmux = DMux8Way::new();
+    for val in [false, true] {
+        for sel_pin_idx in 0..8 {
+            dmux.input.value.set(val);
+            dmux.sel[0].value.set(sel_pin_idx & 4 == 4);
+            dmux.sel[1].value.set(sel_pin_idx & 2 == 2);
+            dmux.sel[2].value.set(sel_pin_idx & 1 == 1);
+            for (pin_idx, output) in dmux.outputs.iter().enumerate() {
+                output.compute();
+                assert_eq!(output.value.get(), val && pin_idx == sel_pin_idx)
+            }
+        }
+    }
+}
