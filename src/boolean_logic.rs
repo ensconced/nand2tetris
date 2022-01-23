@@ -307,29 +307,23 @@ fn test_not16() {
 }
 
 struct TwoInOneOut16 {
-    input_a: PinArray16,
-    input_b: PinArray16,
+    inputs: [PinArray16; 2],
     output: PinArray16,
 }
 
 impl TwoInOneOut16 {
     fn base() -> Self {
-        let input_a = PinArray16::new();
-        let input_b = PinArray16::new();
+        let inputs = [PinArray16::new(), PinArray16::new()];
         let output = PinArray16::new();
-        Self {
-            input_a,
-            input_b,
-            output,
-        }
+        Self { inputs, output }
     }
     fn and16() -> Self {
         let result = Self::base();
         for i in 0..16 {
             let and = TwoInOneOutGate::and();
             result.output.pins[i].feed_from(and.output);
-            and.input_a.feed_from(result.input_a.pins[i].clone());
-            and.input_b.feed_from(result.input_b.pins[i].clone());
+            and.input_a.feed_from(result.inputs[0].pins[i].clone());
+            and.input_b.feed_from(result.inputs[1].pins[i].clone());
         }
         result
     }
@@ -338,8 +332,8 @@ impl TwoInOneOut16 {
         for i in 0..16 {
             let or = TwoInOneOutGate::or();
             result.output.pins[i].feed_from(or.output);
-            or.input_a.feed_from(result.input_a.pins[i].clone());
-            or.input_b.feed_from(result.input_b.pins[i].clone());
+            or.input_a.feed_from(result.inputs[0].pins[i].clone());
+            or.input_b.feed_from(result.inputs[1].pins[i].clone());
         }
         result
     }
@@ -352,8 +346,8 @@ fn test_and16() {
             let and16 = TwoInOneOut16::and16();
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
-            and16.input_a.set_values(test_input_a);
-            and16.input_b.set_values(test_input_b);
+            and16.inputs[0].set_values(test_input_a);
+            and16.inputs[1].set_values(test_input_b);
             and16.output.compute();
             let result = and16.output.pins.map(|pin| pin.value.get());
             let expected = binaryi16(num_a & num_b);
@@ -369,8 +363,8 @@ fn test_or16() {
             let or16 = TwoInOneOut16::or16();
             let test_input_a = binaryi16(num_a);
             let test_input_b = binaryi16(num_b);
-            or16.input_a.set_values(test_input_a);
-            or16.input_b.set_values(test_input_b);
+            or16.inputs[0].set_values(test_input_a);
+            or16.inputs[1].set_values(test_input_b);
             or16.output.compute();
             let result = or16.output.pins.map(|pin| pin.value.get());
             let expected = binaryi16(num_a | num_b);
@@ -532,23 +526,16 @@ impl Mux4Way16 {
             })
             .collect();
 
-        let or16_b = TwoInOneOut16::or16();
-        let or16_c = TwoInOneOut16::or16();
+        let top_or16 = TwoInOneOut16::or16();
+        let bottom_or16s = vec![TwoInOneOut16::or16(), TwoInOneOut16::or16()];
         for (idx, mux) in muxes.into_iter().enumerate() {
-            match idx {
-                0 => or16_b.input_a.feed_from(mux.output),
-                1 => or16_b.input_b.feed_from(mux.output),
-                2 => or16_c.input_a.feed_from(mux.output),
-                3 => or16_c.input_b.feed_from(mux.output),
-                _ => panic!("more muxes than expected..."),
-            }
+            let or_idx = idx / 2;
+            bottom_or16s[or_idx].inputs[idx & 1].feed_from(mux.output);
         }
-
-        let or16_a = TwoInOneOut16::or16();
-        or16_a.input_a.feed_from(or16_b.output);
-        or16_a.input_b.feed_from(or16_c.output);
-
-        result.output.feed_from(or16_a.output);
+        for (idx, bottom_or16) in bottom_or16s.into_iter().enumerate() {
+            top_or16.inputs[idx].feed_from(bottom_or16.output);
+        }
+        result.output.feed_from(top_or16.output);
         result
     }
 }
