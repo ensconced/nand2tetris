@@ -533,13 +533,16 @@ impl Mux4Way16 {
             .collect();
 
         let or16_b = TwoInOneOut16::or16();
-        // TODO - I think the clones shouldn't be necessary...
-        or16_b.input_a.feed_from(muxes[0].output.clone());
-        or16_b.input_b.feed_from(muxes[1].output.clone());
-
         let or16_c = TwoInOneOut16::or16();
-        or16_c.input_a.feed_from(muxes[2].output.clone());
-        or16_c.input_b.feed_from(muxes[3].output.clone());
+        for (idx, mux) in muxes.into_iter().enumerate() {
+            match idx {
+                0 => or16_b.input_a.feed_from(mux.output),
+                1 => or16_b.input_b.feed_from(mux.output),
+                2 => or16_c.input_a.feed_from(mux.output),
+                3 => or16_c.input_b.feed_from(mux.output),
+                _ => panic!("more muxes than expected..."),
+            }
+        }
 
         let or16_a = TwoInOneOut16::or16();
         or16_a.input_a.feed_from(or16_b.output);
