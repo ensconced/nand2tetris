@@ -563,25 +563,20 @@ impl Mux4Way16 {
         };
 
         let constant_false = PinArray16::new();
-
         let muxes: Vec<Mux16> = (0..4)
             .map(|i| {
                 let mux = Mux16::new();
                 let and = TwoInOneOutGate::and();
-                if i & 2 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[0].clone());
-                    and.inputs[0].feed_from(not.output);
-                } else {
-                    and.inputs[0].feed_from(result.sel[0].clone());
+                for j in 0..result.sel.len() {
+                    if i & usize::pow(2, result.sel.len() as u32 - 1 - j as u32) == 0 {
+                        let not = NotGate::new();
+                        not.input.feed_from(result.sel[j].clone());
+                        and.inputs[j].feed_from(not.output);
+                    } else {
+                        and.inputs[j].feed_from(result.sel[j].clone());
+                    }
                 }
-                if i & 1 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[1].clone());
-                    and.inputs[1].feed_from(not.output);
-                } else {
-                    and.inputs[1].feed_from(result.sel[1].clone());
-                }
+
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and.output);
@@ -661,27 +656,19 @@ impl Mux8Way16 {
                 let and_a = TwoInOneOutGate::and();
                 let and_b = TwoInOneOutGate::and();
                 and_a.inputs[0].feed_from(and_b.output);
-
-                if i & 4 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[0].clone());
-                    and_b.inputs[0].feed_from(not.output);
-                } else {
-                    and_b.inputs[0].feed_from(result.sel[0].clone());
-                }
-                if i & 2 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[1].clone());
-                    and_b.inputs[1].feed_from(not.output);
-                } else {
-                    and_b.inputs[1].feed_from(result.sel[1].clone());
-                }
-                if i & 1 == 0 {
-                    let not = NotGate::new();
-                    not.input.feed_from(result.sel[2].clone());
-                    and_b.inputs[1].feed_from(not.output);
-                } else {
-                    and_b.inputs[1].feed_from(result.sel[2].clone());
+                let and_inputs = [
+                    and_a.inputs[1].clone(),
+                    and_b.inputs[0].clone(),
+                    and_b.inputs[1].clone(),
+                ];
+                for j in 0..=2 {
+                    if i & usize::pow(2 - j, 2) == 0 {
+                        let not = NotGate::new();
+                        not.input.feed_from(result.sel[j].clone());
+                        and_inputs[j].feed_from(not.output);
+                    } else {
+                        and_inputs[j].feed_from(result.sel[j].clone());
+                    }
                 }
                 mux.input_a.feed_from(constant_false.clone());
                 mux.input_b.feed_from(result.inputs[i].clone());
