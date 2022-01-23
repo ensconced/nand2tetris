@@ -58,6 +58,7 @@ impl Pin {
     }
 }
 
+#[derive(Default)]
 pub struct PinArray16 {
     pub pins: [Rc<Pin>; 16],
 }

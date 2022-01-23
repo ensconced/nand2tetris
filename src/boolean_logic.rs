@@ -489,101 +489,57 @@ fn test_or8way() {
 }
 
 struct Mux4Way16 {
-    input_a: PinArray16,
-    input_b: PinArray16,
-    input_c: PinArray16,
-    input_d: PinArray16,
+    inputs: [PinArray16; 4],
     sel: [Rc<Pin>; 2],
     output: PinArray16,
 }
 
 impl Mux4Way16 {
     fn new() -> Self {
-        let input_a = PinArray16::new();
-        let input_b = PinArray16::new();
-        let input_c = PinArray16::new();
-        let input_d = PinArray16::new();
+        let inputs: [PinArray16; 4] = Default::default();
         let sel: [Rc<Pin>; 2] = Default::default();
         let output = PinArray16::new();
         let result = Self {
-            input_a,
-            input_b,
-            input_c,
-            input_d,
+            inputs,
             sel,
             output,
         };
 
         let constant_false = PinArray16::new();
 
-        let mux_a = Mux16::new();
-        let mux_b = Mux16::new();
-        let mux_c = Mux16::new();
-        let mux_d = Mux16::new();
-
-        // set up mux_a
-        {
-            let not0 = NotGate::new();
-            not0.input.feed_from(result.sel[0].clone());
-
-            let not1 = NotGate::new();
-            not1.input.feed_from(result.sel[1].clone());
-
-            let and = TwoInOneOutGate::and();
-            and.input_a.feed_from(not0.output);
-            and.input_b.feed_from(not1.output);
-
-            mux_a.input_a.feed_from(constant_false.clone());
-            mux_a.input_b.feed_from(result.input_a.clone());
-            mux_a.sel.feed_from(and.output);
-        }
-
-        // set up mux_b
-        {
-            let not = NotGate::new();
-            not.input.feed_from(result.sel[0].clone());
-
-            let and = TwoInOneOutGate::and();
-            and.input_a.feed_from(not.output);
-            and.input_b.feed_from(result.sel[1].clone());
-
-            mux_b.input_a.feed_from(constant_false.clone());
-            mux_b.input_b.feed_from(result.input_b.clone());
-            mux_b.sel.feed_from(and.output);
-        }
-
-        // set up mux_c
-        {
-            let not = NotGate::new();
-            not.input.feed_from(result.sel[1].clone());
-
-            let and = TwoInOneOutGate::and();
-            and.input_a.feed_from(result.sel[0].clone());
-            and.input_b.feed_from(not.output);
-
-            mux_c.input_a.feed_from(constant_false.clone());
-            mux_c.input_b.feed_from(result.input_c.clone());
-            mux_c.sel.feed_from(and.output);
-        }
-
-        // set up mux_d
-        {
-            let and = TwoInOneOutGate::and();
-            and.input_a.feed_from(result.sel[0].clone());
-            and.input_b.feed_from(result.sel[1].clone());
-
-            mux_d.input_a.feed_from(constant_false.clone());
-            mux_d.input_b.feed_from(result.input_d.clone());
-            mux_d.sel.feed_from(and.output);
-        }
+        let muxes: Vec<Mux16> = (0..4)
+            .map(|i| {
+                let mux = Mux16::new();
+                let and = TwoInOneOutGate::and();
+                if i & 2 == 0 {
+                    let not = NotGate::new();
+                    not.input.feed_from(result.sel[0].clone());
+                    and.input_a.feed_from(not.output);
+                } else {
+                    and.input_a.feed_from(result.sel[0].clone());
+                }
+                if i & 1 == 0 {
+                    let not = NotGate::new();
+                    not.input.feed_from(result.sel[1].clone());
+                    and.input_b.feed_from(not.output);
+                } else {
+                    and.input_b.feed_from(result.sel[1].clone());
+                }
+                mux.input_a.feed_from(constant_false.clone());
+                mux.input_b.feed_from(result.inputs[i].clone());
+                mux.sel.feed_from(and.output);
+                mux
+            })
+            .collect();
 
         let or16_b = TwoInOneOut16::or16();
-        or16_b.input_a.feed_from(mux_a.output);
-        or16_b.input_b.feed_from(mux_b.output);
+        // TODO - I think the clones shouldn't be necessary...
+        or16_b.input_a.feed_from(muxes[0].output.clone());
+        or16_b.input_b.feed_from(muxes[1].output.clone());
 
         let or16_c = TwoInOneOut16::or16();
-        or16_c.input_a.feed_from(mux_c.output);
-        or16_c.input_b.feed_from(mux_d.output);
+        or16_c.input_a.feed_from(muxes[2].output.clone());
+        or16_c.input_b.feed_from(muxes[3].output.clone());
 
         let or16_a = TwoInOneOut16::or16();
         or16_a.input_a.feed_from(or16_b.output);
@@ -605,10 +561,10 @@ fn test_mux4way16() {
     for [num_a, num_b, num_c, num_d] in test_cases {
         for sel in [[false, false], [false, true], [true, false], [true, true]] {
             let mux = Mux4Way16::new();
-            mux.input_a.set_values(binaryi16(num_a));
-            mux.input_b.set_values(binaryi16(num_b));
-            mux.input_c.set_values(binaryi16(num_c));
-            mux.input_d.set_values(binaryi16(num_d));
+            mux.inputs[0].set_values(binaryi16(num_a));
+            mux.inputs[1].set_values(binaryi16(num_b));
+            mux.inputs[2].set_values(binaryi16(num_c));
+            mux.inputs[3].set_values(binaryi16(num_d));
             for i in 0..=1 {
                 mux.sel[i].value.set(sel[i]);
             }
@@ -633,16 +589,20 @@ fn test_mux4way16() {
 }
 
 struct Mux8Way16 {
-    input_a: [Rc<Pin>; 16],
-    input_b: [Rc<Pin>; 16],
-    input_c: [Rc<Pin>; 16],
-    input_d: [Rc<Pin>; 16],
-    input_e: [Rc<Pin>; 16],
-    input_f: [Rc<Pin>; 16],
-    input_g: [Rc<Pin>; 16],
-    input_h: [Rc<Pin>; 16],
+    input_a: PinArray16,
+    input_b: PinArray16,
+    input_c: PinArray16,
+    input_d: PinArray16,
+    input_e: PinArray16,
+    input_f: PinArray16,
+    input_g: PinArray16,
+    input_h: PinArray16,
     sel: [Rc<Pin>; 3],
-    output: [Rc<Pin>; 16],
+    output: PinArray16,
+}
+
+impl Mux8Way16 {
+    // fn new() -> Self {}
 }
 
 // fn mux8way16(
@@ -656,41 +616,41 @@ struct Mux8Way16 {
 //     input_h: [bool; 16],
 //     sel: [bool; 3],
 // ) -> [bool; 16] {
-//     or16(
-//         or16(
-//             or16(
-//                 mux16(
+//     or16a(
+//         or16b(
+//             or16c(
+//                 mux16a(
 //                     [false; 16],
 //                     input_a,
 //                     and(not(sel[0]), and(not(sel[1]), not(sel[2]))),
 //                 ),
-//                 mux16(
+//                 mux16b(
 //                     [false; 16],
 //                     input_b,
 //                     and(not(sel[0]), and(not(sel[1]), sel[2])),
 //                 ),
 //             ),
-//             or16(
-//                 mux16(
+//             or16d(
+//                 mux16c(
 //                     [false; 16],
 //                     input_c,
 //                     and(not(sel[0]), and(sel[1], not(sel[2]))),
 //                 ),
-//                 mux16([false; 16], input_d, and(not(sel[0]), and(sel[1], sel[2]))),
+//                 mux16d([false; 16], input_d, and(not(sel[0]), and(sel[1], sel[2]))),
 //             ),
 //         ),
-//         or16(
-//             or16(
-//                 mux16(
+//         or16e(
+//             or16f(
+//                 mux16e(
 //                     [false; 16],
 //                     input_e,
 //                     and(sel[0], and(not(sel[1]), not(sel[2]))),
 //                 ),
-//                 mux16([false; 16], input_f, and(sel[0], and(not(sel[1]), sel[2]))),
+//                 mux16f([false; 16], input_f, and(sel[0], and(not(sel[1]), sel[2]))),
 //             ),
-//             or16(
-//                 mux16([false; 16], input_g, and(sel[0], and(sel[1], not(sel[2])))),
-//                 mux16([false; 16], input_h, and(sel[0], and(sel[1], sel[2]))),
+//             or16g(
+//                 mux16g([false; 16], input_g, and(sel[0], and(sel[1], not(sel[2])))),
+//                 mux16h([false; 16], input_h, and(sel[0], and(sel[1], sel[2]))),
 //             ),
 //         ),
 //     )
