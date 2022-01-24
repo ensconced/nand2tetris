@@ -50,9 +50,9 @@ fn exhaustively_test_two_in_two_out(gate: DMux, f: fn(bool, bool) -> [bool; 2]) 
     }
 }
 
-struct TwoInOneOutGate {
-    inputs: [Rc<Pin>; 2],
-    output: Rc<Pin>,
+pub struct TwoInOneOutGate {
+    pub inputs: [Rc<Pin>; 2],
+    pub output: Rc<Pin>,
 }
 
 impl TwoInOneOutGate {
@@ -72,7 +72,7 @@ impl TwoInOneOutGate {
         result
     }
 
-    fn or() -> Self {
+    pub fn or() -> Self {
         let result = Self::base();
 
         let nand_a = TwoInOneOutGate::nand();
@@ -90,7 +90,7 @@ impl TwoInOneOutGate {
 
         result
     }
-    fn and() -> Self {
+    pub fn and() -> Self {
         let result = Self::base();
         let nand_gate = TwoInOneOutGate::nand();
         let not_gate = NotGate::new();
@@ -101,7 +101,7 @@ impl TwoInOneOutGate {
         result
     }
 
-    fn xor() -> Self {
+    pub fn xor() -> Self {
         let result = Self::base();
 
         let nand_a = Self::nand();
@@ -146,7 +146,7 @@ fn test_xor() {
     exhaustively_test_two_in_one_out(TwoInOneOutGate::xor(), |a, b| a ^ b);
 }
 
-struct NotGate {
+pub struct NotGate {
     input: Rc<Pin>,
     output: Rc<Pin>,
 }
@@ -269,7 +269,7 @@ fn test_dmux() {
     )
 }
 
-struct Not16 {
+pub struct Not16 {
     input: PinArray16,
     output: PinArray16,
 }
@@ -301,7 +301,7 @@ fn test_not16() {
     }
 }
 
-struct TwoInOneOut16 {
+pub struct TwoInOneOut16 {
     inputs: [PinArray16; 2],
     output: PinArray16,
 }
@@ -368,7 +368,7 @@ fn test_or16() {
     }
 }
 
-struct Mux16 {
+pub struct Mux16 {
     input_a: PinArray16,
     input_b: PinArray16,
     sel: Rc<Pin>,
@@ -421,14 +421,17 @@ fn test_mux16() {
     }
 }
 
-struct Or8Way {
+pub struct Or8Way {
     input: [Rc<Pin>; 8],
     output: Rc<Pin>,
 }
 
 impl Or8Way {
     fn new() -> Self {
-        let input: [Rc<Pin>; 8] = Default::default();
+        let mut input: [Rc<Pin>; 8] = Default::default();
+        for i in 0..8 {
+            input[i] = Pin::new();
+        }
         let output = Pin::new();
         let result = Self { input, output };
 
@@ -586,8 +589,13 @@ fn select_by_idx(idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
 
 impl Mux4Way16 {
     fn new() -> Self {
-        let inputs: [PinArray16; 4] = Default::default();
-        let sel: [Rc<Pin>; 2] = Default::default();
+        let inputs: [PinArray16; 4] = [
+            PinArray16::new(),
+            PinArray16::new(),
+            PinArray16::new(),
+            PinArray16::new(),
+        ];
+        let sel: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
         let output = PinArray16::new();
         let result = Self {
             inputs,
@@ -663,8 +671,11 @@ struct Mux8Way16 {
 
 impl Mux8Way16 {
     fn new() -> Self {
-        let inputs: [PinArray16; 8] = Default::default();
-        let sel: [Rc<Pin>; 3] = Default::default();
+        let mut inputs: [PinArray16; 8] = Default::default();
+        for i in 0..8 {
+            inputs[i] = PinArray16::new();
+        }
+        let sel: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
         let output = PinArray16::new();
         let result = Self {
             inputs,
@@ -741,8 +752,8 @@ struct DMux4Way {
 impl DMux4Way {
     fn new() -> Self {
         let input = Pin::new();
-        let sel: [Rc<Pin>; 2] = Default::default();
-        let output: [Rc<Pin>; 4] = Default::default();
+        let sel: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
+        let output: [Rc<Pin>; 4] = [Pin::new(), Pin::new(), Pin::new(), Pin::new()];
         let result = Self {
             input,
             sel,
@@ -787,8 +798,11 @@ struct DMux8Way {
 impl DMux8Way {
     fn new() -> Self {
         let input = Pin::new();
-        let sel: [Rc<Pin>; 3] = Default::default();
-        let outputs: [Rc<Pin>; 8] = Default::default();
+        let sel: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
+        let mut outputs: [Rc<Pin>; 8] = Default::default();
+        for i in 0..8 {
+            outputs[i] = Pin::new();
+        }
         let result = Self {
             input,
             sel,

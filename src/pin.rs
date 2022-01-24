@@ -65,7 +65,10 @@ pub struct PinArray16 {
 
 impl PinArray16 {
     pub fn new() -> Self {
-        let pins: [Rc<Pin>; 16] = Default::default();
+        let mut pins: [Rc<Pin>; 16] = Default::default();
+        for i in 0..16 {
+            pins[i] = Pin::new();
+        }
         Self { pins }
     }
 

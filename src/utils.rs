@@ -53,3 +53,15 @@ fn test_bools_to_usize() {
         123
     );
 }
+
+fn last_n(arr: [bool; 8], n: usize) -> Vec<bool> {
+    arr.into_iter().rev().take(n).rev().collect()
+}
+
+pub fn last_3(arr: [bool; 8]) -> [bool; 3] {
+    last_n(arr, 3).try_into().unwrap()
+}
+
+pub fn last_2(arr: [bool; 8]) -> [bool; 2] {
+    last_n(arr, 2).try_into().unwrap()
+}

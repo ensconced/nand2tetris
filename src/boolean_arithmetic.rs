@@ -1,20 +1,159 @@
-// use crate::boolean_logic::{and, and16, mux16, not, not16, or, or8way, xor};
+use crate::boolean_logic::{Mux16, Not16, NotGate, Or8Way, TwoInOneOut16, TwoInOneOutGate};
+use crate::pin::{Pin, PinArray16};
+use crate::utils::{bools_to_usize, i16_to_bools, last_2, last_3, u8_to_bools};
+use std::iter;
+use std::rc::Rc;
 
-// fn half_adder(a: bool, b: bool) -> [bool; 2] {
-//     [and(a, b), xor(a, b)]
-// }
+struct HalfAdder {
+    inputs: [Rc<Pin>; 2],
+    outputs: [Rc<Pin>; 2],
+}
 
-// // returns (carry, sum)
-// fn full_adder(a: bool, b: bool, c: bool) -> [bool; 2] {
-//     let first_half_adder_output = half_adder(a, b);
-//     let second_half_adder_output = half_adder(first_half_adder_output[1], c);
-//     [
-//         or(first_half_adder_output[0], second_half_adder_output[0]),
-//         second_half_adder_output[1],
-//     ]
-// }
+impl HalfAdder {
+    fn new() -> Self {
+        let inputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
+        let outputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
+        let result = Self { inputs, outputs };
 
-// // integer 2's complement addition - overflow is neither detected nor handled
+        let and = TwoInOneOutGate::and();
+        let xor = TwoInOneOutGate::xor();
+
+        result.outputs[0].feed_from(and.output);
+        result.outputs[1].feed_from(xor.output);
+        and.inputs[0].feed_from(result.inputs[0].clone());
+        and.inputs[1].feed_from(result.inputs[1].clone());
+        xor.inputs[0].feed_from(result.inputs[0].clone());
+        xor.inputs[1].feed_from(result.inputs[1].clone());
+
+        result
+    }
+}
+
+#[test]
+fn test_half_adder() {
+    let test_cases = [
+        [[false, false], [false, false]],
+        [[false, true], [false, true]],
+        [[true, false], [false, true]],
+        [[true, true], [true, false]],
+    ];
+
+    let half_adder = HalfAdder::new();
+    for test_case in test_cases {
+        let [inputs, expected_outputs] = test_case;
+        for i in 0..=1 {
+            half_adder.inputs[i].value.set(inputs[i]);
+        }
+        let mut result = [false; 2];
+        for i in 0..=1 {
+            half_adder.outputs[i].compute();
+            result[i] = half_adder.outputs[i].value.get();
+        }
+        assert_eq!(result, expected_outputs);
+    }
+}
+
+struct FullAdder {
+    inputs: [Rc<Pin>; 3],
+    outputs: [Rc<Pin>; 2],
+}
+
+impl FullAdder {
+    fn new() -> Self {
+        let inputs: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
+        let outputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
+        let result = Self { inputs, outputs };
+
+        let half_adder_a = HalfAdder::new();
+        let half_adder_b = HalfAdder::new();
+
+        half_adder_a.inputs[0].feed_from(result.inputs[0].clone());
+        half_adder_a.inputs[1].feed_from(result.inputs[1].clone());
+
+        half_adder_b.inputs[0].feed_from(half_adder_a.outputs[1].clone());
+        half_adder_b.inputs[1].feed_from(result.inputs[2].clone());
+
+        let or = TwoInOneOutGate::or();
+        or.inputs[0].feed_from(half_adder_a.outputs[0].clone());
+        or.inputs[1].feed_from(half_adder_b.outputs[0].clone());
+
+        result.outputs[0].feed_from(or.output);
+        result.outputs[1].feed_from(half_adder_b.outputs[1].clone());
+
+        result
+    }
+}
+
+#[test]
+fn test_full_adder() {
+    for i in 0..8 {
+        let full_adder = FullAdder::new();
+        let inputs = last_3(u8_to_bools(i as u8));
+        for i in 0..3 {
+            full_adder.inputs[i].value.set(inputs[i]);
+        }
+        for i in 0..2 {
+            full_adder.outputs[i].compute();
+        }
+        let outputs = full_adder.outputs.map(|pin| pin.value.get());
+
+        let expected_output = last_2(u8_to_bools(i32::count_ones(i) as u8));
+        assert_eq!(outputs, expected_output);
+    }
+}
+
+// integer 2's complement addition - overflow is neither detected nor handled
+#[derive(Debug)]
+struct Add16 {
+    inputs: [PinArray16; 2],
+    output: PinArray16,
+}
+
+impl Add16 {
+    fn new() -> Self {
+        let inputs = [PinArray16::new(), PinArray16::new()];
+        let output = PinArray16::new();
+        let result = Self { inputs, output };
+
+        let first_adder = HalfAdder::new();
+        first_adder.inputs[0].feed_from(result.inputs[0].pins[15].clone());
+        first_adder.inputs[1].feed_from(result.inputs[1].pins[15].clone());
+        result.output.pins[15].feed_from(first_adder.outputs[1].clone());
+        let mut carry = first_adder.outputs[0].clone();
+        for i in (0..15).rev() {
+            let adder = FullAdder::new();
+            adder.inputs[0].feed_from(result.inputs[0].pins[i].clone());
+            adder.inputs[1].feed_from(result.inputs[1].pins[i].clone());
+            adder.inputs[2].feed_from(carry);
+            result.output.pins[i].feed_from(adder.outputs[1].clone());
+            carry = adder.outputs[0].clone();
+        }
+
+        result
+    }
+}
+
+#[test]
+fn test_add16() {
+    let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
+    let add16 = Add16::new();
+    println!("here");
+    for i in test_cases {
+        for j in test_cases {
+            let input_a = i16_to_bools(i);
+            let input_b = i16_to_bools(j);
+            add16.inputs[0].set_values(input_a);
+            add16.inputs[1].set_values(input_b);
+            let mut result = [false; 16];
+            for (pin_idx, pin) in add16.output.pins.iter().enumerate() {
+                pin.compute();
+                result[pin_idx] = pin.value.get();
+            }
+            assert_eq!(result, i16_to_bools(i + j));
+        }
+    }
+}
+
 // fn add16(a: [bool; 16], b: [bool; 16]) -> [bool; 16] {
 //     let adder1 = half_adder(a[15], b[15]);
 //     let adder2 = full_adder(a[14], b[14], adder1[0]);
@@ -85,14 +224,6 @@
 // mod tests {
 //     use super::*;
 //     use crate::utils::binary;
-
-//     #[test]
-//     fn test_half_adder() {
-//         assert_eq!(half_adder(false, false), [false, false]);
-//         assert_eq!(half_adder(false, true), [false, true]);
-//         assert_eq!(half_adder(true, false), [false, true]);
-//         assert_eq!(half_adder(true, true), [true, false]);
-//     }
 
 //     #[test]
 //     fn test_full_adder() {
