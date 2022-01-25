@@ -20,6 +20,7 @@ impl Pin {
     pub fn new() -> Rc<Self> {
         unsafe {
             PIN_COUNT += 1;
+            println!("create pin {}", PIN_COUNT);
             Rc::new(Self {
                 debug_id: PIN_COUNT,
                 value: Cell::new(false),
@@ -40,6 +41,7 @@ impl Pin {
             .replace(Connection::Nand(input_a, input_b));
     }
     pub fn compute(&self) {
+        println!("computing pin {}", self.debug_id);
         // TODO - this is an inefficient "pull" system - would be better
         // to do a toposort and then "push".
         let new_value = match self.connection.borrow().as_ref() {

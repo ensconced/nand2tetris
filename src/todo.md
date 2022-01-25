@@ -1,3 +1,10 @@
+debugging add16
+
+- conditionally include debug output
+- write util to parse debug output into regraph playground - with each component in combo...
+- ...or just to generate a human-readable report without regraph?
+- and highlight any cycles...
+
 performance ideas
 
 - profiling!

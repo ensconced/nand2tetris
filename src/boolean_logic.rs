@@ -73,6 +73,7 @@ impl TwoInOneOutGate {
     }
 
     pub fn or() -> Self {
+        println!("start or");
         let result = Self::base();
 
         let nand_a = TwoInOneOutGate::nand();
@@ -87,10 +88,12 @@ impl TwoInOneOutGate {
         nand_a.inputs[1].feed_from(result.inputs[0].clone());
         nand_b.inputs[0].feed_from(result.inputs[1].clone());
         nand_b.inputs[1].feed_from(result.inputs[1].clone());
+        println!("end or");
 
         result
     }
     pub fn and() -> Self {
+        println!("start and");
         let result = Self::base();
         let nand_gate = TwoInOneOutGate::nand();
         let not_gate = NotGate::new();
@@ -98,10 +101,12 @@ impl TwoInOneOutGate {
         not_gate.input.feed_from(nand_gate.output);
         nand_gate.inputs[0].feed_from(result.inputs[0].clone());
         nand_gate.inputs[1].feed_from(result.inputs[1].clone());
+        println!("end and");
         result
     }
 
     pub fn xor() -> Self {
+        println!("start xor");
         let result = Self::base();
 
         let nand_a = Self::nand();
@@ -122,6 +127,7 @@ impl TwoInOneOutGate {
         nand_a.inputs[0].feed_from(result.inputs[0].clone());
         nand_a.inputs[1].feed_from(result.inputs[1].clone());
 
+        println!("end xor");
         result
     }
 }

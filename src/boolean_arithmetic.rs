@@ -1,7 +1,6 @@
 use crate::boolean_logic::{Mux16, Not16, NotGate, Or8Way, TwoInOneOut16, TwoInOneOutGate};
 use crate::pin::{Pin, PinArray16};
 use crate::utils::{bools_to_usize, i16_to_bools, last_2, last_3, u8_to_bools};
-use std::iter;
 use std::rc::Rc;
 
 struct HalfAdder {
@@ -11,6 +10,7 @@ struct HalfAdder {
 
 impl HalfAdder {
     fn new() -> Self {
+        println!("start halfadder");
         let inputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
         let outputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
         let result = Self { inputs, outputs };
@@ -25,6 +25,7 @@ impl HalfAdder {
         xor.inputs[0].feed_from(result.inputs[0].clone());
         xor.inputs[1].feed_from(result.inputs[1].clone());
 
+        println!("end halfadder");
         result
     }
 }
@@ -60,6 +61,7 @@ struct FullAdder {
 
 impl FullAdder {
     fn new() -> Self {
+        println!("start fulladder");
         let inputs: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
         let outputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
         let result = Self { inputs, outputs };
@@ -79,6 +81,7 @@ impl FullAdder {
 
         result.outputs[0].feed_from(or.output);
         result.outputs[1].feed_from(half_adder_b.outputs[1].clone());
+        println!("end fulladder");
 
         result
     }
@@ -137,7 +140,6 @@ impl Add16 {
 fn test_add16() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let add16 = Add16::new();
-    println!("here");
     for i in test_cases {
         for j in test_cases {
             let input_a = i16_to_bools(i);
