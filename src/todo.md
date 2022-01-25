@@ -15,6 +15,7 @@ performance ideas
 refactoring ideas
 
 - use macros for generating similar gates with diff number of inputs etc
+- cargo clippy and address issues
 
 extra ideas
 

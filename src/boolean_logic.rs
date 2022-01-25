@@ -1,5 +1,5 @@
 use crate::pin::{Pin, PinArray16};
-use crate::utils::{bools_to_usize, i16_to_bools, u8_to_bools};
+use crate::test_utils::{bools_to_usize, i16_to_bools, u8_to_bools};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -64,7 +64,7 @@ impl TwoInOneOutGate {
         }
     }
 
-    fn nand() -> Self {
+    pub fn nand() -> Self {
         let result = Self::base();
         result
             .output

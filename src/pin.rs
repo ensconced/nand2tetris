@@ -1,19 +1,20 @@
 use std::cell::{Cell, RefCell};
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 static mut PIN_COUNT: i32 = 0;
 
-#[derive(Debug)]
-enum Connection {
+#[derive(Debug, PartialEq, Eq)]
+pub enum Connection {
     Eq(Rc<Pin>),
     Nand(Rc<Pin>, Rc<Pin>),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pin {
     debug_id: i32,
     pub value: Cell<bool>,
-    connection: RefCell<Option<Connection>>,
+    pub connection: RefCell<Option<Connection>>,
 }
 
 impl Pin {
@@ -57,6 +58,12 @@ impl Pin {
             None => self.value.get(),
         };
         self.value.set(new_value);
+    }
+}
+
+impl Hash for Pin {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.debug_id.hash(state);
     }
 }
 
