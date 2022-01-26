@@ -212,35 +212,80 @@ fn test_add16() {
     }
 }
 
-// fn add16(a: [bool; 16], b: [bool; 16]) -> [bool; 16] {
-//     let adder1 = half_adder(a[15], b[15]);
-//     let adder2 = full_adder(a[14], b[14], adder1[0]);
-//     let adder3 = full_adder(a[13], b[13], adder2[0]);
-//     let adder4 = full_adder(a[12], b[12], adder3[0]);
-//     let adder5 = full_adder(a[11], b[11], adder4[0]);
-//     let adder6 = full_adder(a[10], b[10], adder5[0]);
-//     let adder7 = full_adder(a[9], b[9], adder6[0]);
-//     let adder8 = full_adder(a[8], b[8], adder7[0]);
-//     let adder9 = full_adder(a[7], b[7], adder8[0]);
-//     let adder10 = full_adder(a[6], b[6], adder9[0]);
-//     let adder11 = full_adder(a[5], b[5], adder10[0]);
-//     let adder12 = full_adder(a[4], b[4], adder11[0]);
-//     let adder13 = full_adder(a[3], b[3], adder12[0]);
-//     let adder14 = full_adder(a[2], b[2], adder13[0]);
-//     let adder15 = full_adder(a[1], b[1], adder14[0]);
-//     let adder16 = full_adder(a[0], b[0], adder15[0]);
-//     [
-//         adder16[1], adder15[1], adder14[1], adder13[1], adder12[1], adder11[1], adder10[1],
-//         adder9[1], adder8[1], adder7[1], adder6[1], adder5[1], adder4[1], adder3[1], adder2[1],
-//         adder1[1],
-//     ]
-// }
+struct Inc16 {
+    input: PinArray16,
+    output: PinArray16,
+}
 
-// fn inc16(input: [bool; 16]) -> [bool; 16] {
-//     let mut one = [false; 16];
-//     one[15] = true;
-//     add16(input, one)
-// }
+impl Inc16 {
+    fn new() -> Self {
+        let input = PinArray16::new();
+        let output = PinArray16::new();
+        let result = Self { input, output };
+
+        let one = PinArray16::new();
+        one.pins[15].value.set(true);
+        let add = Add16::new();
+        result.output.feed_from(add.output);
+        add.inputs[0].feed_from(one);
+        add.inputs[1].feed_from(result.input.clone());
+
+        result
+    }
+}
+
+#[test]
+fn test_inc16() {
+    let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
+    let inc16 = Inc16::new();
+    for i in test_cases {
+        for _ in test_cases {
+            inc16.input.set_values(i16_to_bools(i));
+            let result = compute_all(&inc16.output.pins);
+            let expected_num = (std::num::Wrapping(i) + std::num::Wrapping(1)).0;
+            assert_eq!(result[0..16], i16_to_bools(expected_num));
+        }
+    }
+}
+
+struct IsNonZero {
+    output: Rc<Pin>,
+    input: PinArray16,
+}
+
+impl IsNonZero {
+    fn new() -> Self {
+        let output = Pin::new();
+        let input = PinArray16::new();
+        let result = Self { input, output };
+
+        let or8way_a = Or8Way::new();
+        let or8way_b = Or8Way::new();
+        let or = TwoInOneOutGate::or();
+
+        or.inputs[0].feed_from(or8way_a.output);
+        or.inputs[1].feed_from(or8way_b.output);
+        for i in 0..8 {
+            or8way_a.input[i].feed_from(result.input.pins[i].clone());
+            or8way_b.input[i].feed_from(result.input.pins[i + 8].clone());
+        }
+        result.output.feed_from(or.output);
+
+        result
+    }
+}
+
+#[test]
+fn test_is_non_zero() {
+    let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
+    let is_non_zero = IsNonZero::new();
+    for i in test_cases {
+        is_non_zero.input.set_values(i16_to_bools(i));
+        let result = compute_all(&[is_non_zero.output.clone()]);
+        let expected = i != 0;
+        assert_eq!(result[0], expected);
+    }
+}
 
 // fn is_non_zero(a: [bool; 16]) -> bool {
 //     or(

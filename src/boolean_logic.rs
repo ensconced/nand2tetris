@@ -421,12 +421,12 @@ fn test_mux16() {
 }
 
 pub struct Or8Way {
-    input: [Rc<Pin>; 8],
-    output: Rc<Pin>,
+    pub input: [Rc<Pin>; 8],
+    pub output: Rc<Pin>,
 }
 
 impl Or8Way {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut input: [Rc<Pin>; 8] = Default::default();
         for i in 0..8 {
             input[i] = Pin::new();

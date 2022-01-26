@@ -8,9 +8,7 @@ debugging add16
 performance ideas
 
 - profiling!
-- push instead of pull by doing toposort then reversing
-- when pushing, use transactions when setting full set of inputs to avoid multiplying work
-- pare down long eq chains
+- compress long eq chains
 
 refactoring ideas
 
