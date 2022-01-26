@@ -287,11 +287,11 @@ fn test_is_non_zero() {
     }
 }
 
-// struct ALUOutput {
-//     out: [bool; 16],
-//     zr: bool,
-//     ng: bool,
-// }
+struct ALUOutput {
+    out: PinArray16,
+    zr: Rc<Pin>,
+    ng: Rc<Pin>,
+}
 
 // fn alu(
 //     x: [bool; 16],
