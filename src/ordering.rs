@@ -2,6 +2,13 @@ use crate::pin::{Connection, Pin};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+pub fn compute_all(output_pins: &[Rc<Pin>]) -> Vec<bool> {
+    for pin in reverse_topological_sort(all_connected_pins(output_pins.to_vec())) {
+        pin.compute();
+    }
+    output_pins.iter().map(|pin| pin.value.get()).collect()
+}
+
 fn reverse_topological_sort(all_pins: HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
     let mut done = HashSet::new();
     let mut doing = HashSet::new();
@@ -50,7 +57,7 @@ fn reverse_topological_sort(all_pins: HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
 
 #[cfg(test)]
 mod test_reverse_topological_sort {
-    use crate::boolean_arithmetic::FullAdder;
+    use crate::boolean_arithmetic::{Add16, FullAdder};
     use crate::boolean_logic::TwoInOneOutGate;
 
     use super::*;
@@ -141,6 +148,13 @@ mod test_reverse_topological_sort {
     fn full_adder() {
         let full_adder = FullAdder::new();
         let sorted = reverse_topological_sort(all_connected_pins(full_adder.outputs.to_vec()));
+        assert!(pins_are_in_order(sorted));
+    }
+
+    #[test]
+    fn add16() {
+        let add16 = Add16::new();
+        let sorted = reverse_topological_sort(all_connected_pins(add16.output.pins.to_vec()));
         assert!(pins_are_in_order(sorted));
     }
 }

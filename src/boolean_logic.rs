@@ -1,3 +1,4 @@
+use crate::ordering::compute_all;
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::{bools_to_usize, i16_to_bools, u8_to_bools};
 use std::cell::{Cell, RefCell};
@@ -12,8 +13,8 @@ fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> 
     for input in all_inputs {
         gate.inputs[0].value.set(input[0]);
         gate.inputs[1].value.set(input[1]);
-        gate.output.compute();
-        assert_eq!(gate.output.value.get(), f(input[0], input[1]));
+        let result = compute_all(&[gate.output.clone()]);
+        assert_eq!(result[0], f(input[0], input[1]));
     }
 }
 
@@ -32,8 +33,8 @@ fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool
         gate.input_a.value.set(input[0]);
         gate.input_b.value.set(input[1]);
         gate.sel.value.set(input[2]);
-        gate.output.compute();
-        assert_eq!(gate.output.value.get(), f(input[0], input[1], input[2]));
+        let result = compute_all(&[gate.output.clone()]);
+        assert_eq!(result[0], f(input[0], input[1], input[2]));
     }
 }
 
@@ -42,11 +43,9 @@ fn exhaustively_test_two_in_two_out(gate: DMux, f: fn(bool, bool) -> [bool; 2]) 
     for input in all_inputs {
         gate.input.value.set(input[0]);
         gate.sel.value.set(input[1]);
-        gate.output_a.compute();
-        gate.output_b.compute();
+        let result = compute_all(&[gate.output_a.clone(), gate.output_b.clone()]);
         let expected = f(input[0], input[1]);
-        assert_eq!(gate.output_a.value.get(), expected[0]);
-        assert_eq!(gate.output_b.value.get(), expected[1]);
+        assert_eq!(result, expected);
     }
 }
 
@@ -73,7 +72,7 @@ impl TwoInOneOutGate {
     }
 
     pub fn or() -> Self {
-        println!("start or");
+        // println!("start or");
         let result = Self::base();
 
         let nand_a = TwoInOneOutGate::nand();
@@ -88,12 +87,12 @@ impl TwoInOneOutGate {
         nand_a.inputs[1].feed_from(result.inputs[0].clone());
         nand_b.inputs[0].feed_from(result.inputs[1].clone());
         nand_b.inputs[1].feed_from(result.inputs[1].clone());
-        println!("end or");
+        // println!("end or");
 
         result
     }
     pub fn and() -> Self {
-        println!("start and");
+        // println!("start and");
         let result = Self::base();
         let nand_gate = TwoInOneOutGate::nand();
         let not_gate = NotGate::new();
@@ -101,12 +100,12 @@ impl TwoInOneOutGate {
         not_gate.input.feed_from(nand_gate.output);
         nand_gate.inputs[0].feed_from(result.inputs[0].clone());
         nand_gate.inputs[1].feed_from(result.inputs[1].clone());
-        println!("end and");
+        // println!("end and");
         result
     }
 
     pub fn xor() -> Self {
-        println!("start xor");
+        // println!("start xor");
         let result = Self::base();
 
         let nand_a = Self::nand();
@@ -127,7 +126,7 @@ impl TwoInOneOutGate {
         nand_a.inputs[0].feed_from(result.inputs[0].clone());
         nand_a.inputs[1].feed_from(result.inputs[1].clone());
 
-        println!("end xor");
+        // println!("end xor");
         result
     }
 }
@@ -174,11 +173,11 @@ impl NotGate {
 fn test_not_gate() {
     let not_gate = NotGate::new();
     not_gate.input.value.set(true);
-    not_gate.output.compute();
-    assert_eq!(not_gate.output.value.get(), false);
+    let result = compute_all(&[not_gate.output.clone()]);
+    assert_eq!(result[0], false);
     not_gate.input.value.set(false);
-    not_gate.output.compute();
-    assert_eq!(not_gate.output.value.get(), true);
+    let result = compute_all(&[not_gate.output]);
+    assert_eq!(result[0], true);
 }
 
 #[derive(Default)]
@@ -299,11 +298,8 @@ fn test_not16() {
     for num in TEST_NUMS {
         let not16 = Not16::new();
         not16.input.set_values(i16_to_bools(num));
-        not16.output.compute();
-        assert_eq!(
-            not16.output.pins.map(|pin| pin.value.get()),
-            i16_to_bools(!num)
-        );
+        let result = compute_all(&not16.output.pins);
+        assert_eq!(result, i16_to_bools(!num));
     }
 }
 
@@ -349,8 +345,7 @@ fn test_and16() {
             let test_input_b = i16_to_bools(num_b);
             and16.inputs[0].set_values(test_input_a);
             and16.inputs[1].set_values(test_input_b);
-            and16.output.compute();
-            let result = and16.output.pins.map(|pin| pin.value.get());
+            let result = compute_all(&and16.output.pins);
             let expected = i16_to_bools(num_a & num_b);
             assert_eq!(result, expected);
         }
@@ -366,8 +361,7 @@ fn test_or16() {
             let test_input_b = i16_to_bools(num_b);
             or16.inputs[0].set_values(test_input_a);
             or16.inputs[1].set_values(test_input_b);
-            or16.output.compute();
-            let result = or16.output.pins.map(|pin| pin.value.get());
+            let result = compute_all(&or16.output.pins);
             let expected = i16_to_bools(num_a | num_b);
             assert_eq!(result, expected);
         }
@@ -418,8 +412,7 @@ fn test_mux16() {
                 mux16.input_a.set_values(test_input_a);
                 mux16.input_b.set_values(test_input_b);
                 mux16.sel.value.set(sel);
-                mux16.output.compute();
-                let result = mux16.output.pins.map(|pin| pin.value.get());
+                let result = compute_all(&mux16.output.pins);
                 let expected = if sel { test_input_b } else { test_input_a };
                 assert_eq!(result, expected);
             }
@@ -481,8 +474,8 @@ fn test_or8way() {
         for i in 0..8 {
             or8way.input[i].value.set(test_input[i]);
         }
-        or8way.output.compute();
-        assert_eq!(or8way.output.value.get(), num != 0);
+        let result = compute_all(&[or8way.output.clone()]);
+        assert_eq!(result[0], num != 0);
     }
 }
 
@@ -530,17 +523,11 @@ fn test_or_n_way_16() {
     for pin_array in funnel.inputs.iter() {
         pin_array.set_values([false; 16]);
     }
-    funnel.output.compute();
-    assert_eq!(
-        funnel.output.clone().pins.map(|pin| pin.value.get()),
-        [false; 16]
-    );
+    let result = compute_all(&funnel.output.pins);
+    assert_eq!(result, [false; 16]);
     funnel.inputs[5].set_values(i16_to_bools(123));
-    funnel.output.compute();
-    assert_eq!(
-        funnel.output.pins.map(|pin| pin.value.get()),
-        i16_to_bools(123)
-    );
+    let result = compute_all(&funnel.output.pins);
+    assert_eq!(result, i16_to_bools(123));
 }
 
 struct OrFunnel4Way16 {
@@ -649,8 +636,7 @@ fn test_mux4way16() {
             for i in 0..=1 {
                 mux.sel[i].value.set(sel[i]);
             }
-            mux.output.compute();
-            let result = mux.output.pins.map(|pin| pin.value.get());
+            let result = compute_all(&mux.output.pins);
             let expected = if sel[0] {
                 if sel[1] {
                     i16_to_bools(num_d)
@@ -664,7 +650,7 @@ fn test_mux4way16() {
                     i16_to_bools(num_a)
                 }
             };
-            assert_eq!(expected, result);
+            assert_eq!(result, expected);
         }
     }
 }
@@ -741,10 +727,9 @@ fn test_mux8way16() {
             for i in 0..=2 {
                 mux.sel[i].value.set(sel[i]);
             }
-            mux.output.compute();
-            let result = mux.output.pins.map(|pin| pin.value.get());
+            let result = compute_all(&mux.output.pins);
             let expected = i16_to_bools(test_case[bools_to_usize(&sel)]);
-            assert_eq!(expected, result);
+            assert_eq!(result, expected);
         }
     }
 }
@@ -788,8 +773,8 @@ fn test_dmux_4_way() {
             dmux.sel[0].value.set(sel_pin_idx & 2 == 2);
             dmux.sel[1].value.set(sel_pin_idx & 1 == 1);
             for (pin_idx, output) in dmux.outputs.iter().enumerate() {
-                output.compute();
-                assert_eq!(output.value.get(), val && pin_idx == sel_pin_idx)
+                let result = compute_all(&[output.clone()]);
+                assert_eq!(result[0], val && pin_idx == sel_pin_idx)
             }
         }
     }
@@ -845,8 +830,8 @@ fn test_dmux_8_way() {
             dmux.sel[1].value.set(sel_pin_idx & 2 == 2);
             dmux.sel[2].value.set(sel_pin_idx & 1 == 1);
             for (pin_idx, output) in dmux.outputs.iter().enumerate() {
-                output.compute();
-                assert_eq!(output.value.get(), val && pin_idx == sel_pin_idx)
+                let result = compute_all(&[output.clone()]);
+                assert_eq!(result[0], val && pin_idx == sel_pin_idx)
             }
         }
     }
