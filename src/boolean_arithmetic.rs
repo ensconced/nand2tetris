@@ -54,13 +54,13 @@ fn test_half_adder() {
     }
 }
 
-struct FullAdder {
+pub struct FullAdder {
     inputs: [Rc<Pin>; 3],
-    outputs: [Rc<Pin>; 2],
+    pub outputs: [Rc<Pin>; 2],
 }
 
 impl FullAdder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         println!("start fulladder");
         let inputs: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
         let outputs: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
