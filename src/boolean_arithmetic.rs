@@ -354,19 +354,6 @@ mod test {
 }
 
 //     #[test]
-//     fn test_alu_one() {
-//         fn test(x: i16, y: i16) {
-//             let result = alu(binary(x), binary(y), true, true, true, true, true, true);
-//             assert_eq!(result.out, binary(1))
-//         }
-//         test(0, 0);
-//         test(1, 0);
-//         test(0, 1);
-//         test(123, 1234);
-//         test(-123, -1234);
-//     }
-
-//     #[test]
 //     fn test_alu_minus_one() {
 //         fn test(x: i16, y: i16) {
 //             let result = alu(binary(x), binary(y), true, false, true, false, false, true);
