@@ -152,12 +152,12 @@ fn test_xor() {
 }
 
 pub struct NotGate {
-    input: Rc<Pin>,
-    output: Rc<Pin>,
+    pub input: Rc<Pin>,
+    pub output: Rc<Pin>,
 }
 
 impl NotGate {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let input = Pin::new();
         let output = Pin::new();
         let nand_gate = TwoInOneOutGate::nand();
@@ -275,12 +275,12 @@ fn test_dmux() {
 }
 
 pub struct Not16 {
-    input: PinArray16,
-    output: PinArray16,
+    pub input: PinArray16,
+    pub output: PinArray16,
 }
 
 impl Not16 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let input = PinArray16::new();
         let output = PinArray16::new();
         let result = Self { input, output };
@@ -304,8 +304,8 @@ fn test_not16() {
 }
 
 pub struct TwoInOneOut16 {
-    inputs: [PinArray16; 2],
-    output: PinArray16,
+    pub inputs: [PinArray16; 2],
+    pub output: PinArray16,
 }
 
 impl TwoInOneOut16 {
@@ -314,7 +314,7 @@ impl TwoInOneOut16 {
         let output = PinArray16::new();
         Self { inputs, output }
     }
-    fn and16() -> Self {
+    pub fn and16() -> Self {
         let result = Self::base();
         for i in 0..16 {
             let and = TwoInOneOutGate::and();
@@ -369,22 +369,19 @@ fn test_or16() {
 }
 
 pub struct Mux16 {
-    input_a: PinArray16,
-    input_b: PinArray16,
-    sel: Rc<Pin>,
-    output: PinArray16,
+    pub inputs: [PinArray16; 2],
+    pub sel: Rc<Pin>,
+    pub output: PinArray16,
 }
 
 impl Mux16 {
-    fn new() -> Self {
-        let input_a = PinArray16::new();
-        let input_b = PinArray16::new();
+    pub fn new() -> Self {
+        let inputs = [PinArray16::new(), PinArray16::new()];
         let output = PinArray16::new();
         let sel = Pin::new();
 
         let result = Self {
-            input_a,
-            input_b,
+            inputs,
             sel,
             output,
         };
@@ -392,8 +389,8 @@ impl Mux16 {
         for i in 0..16 {
             let mux = Mux::new();
             mux.sel.feed_from(result.sel.clone());
-            mux.input_a.feed_from(result.input_a.pins[i].clone());
-            mux.input_b.feed_from(result.input_b.pins[i].clone());
+            mux.input_a.feed_from(result.inputs[0].pins[i].clone());
+            mux.input_b.feed_from(result.inputs[1].pins[i].clone());
             result.output.pins[i].feed_from(mux.output);
         }
 
@@ -409,8 +406,8 @@ fn test_mux16() {
                 let mux16 = Mux16::new();
                 let test_input_a = i16_to_bools(num_a);
                 let test_input_b = i16_to_bools(num_b);
-                mux16.input_a.set_values(test_input_a);
-                mux16.input_b.set_values(test_input_b);
+                mux16.inputs[0].set_values(test_input_a);
+                mux16.inputs[1].set_values(test_input_b);
                 mux16.sel.value.set(sel);
                 let result = compute_all(&mux16.output.pins);
                 let expected = if sel { test_input_b } else { test_input_a };
@@ -602,8 +599,8 @@ impl Mux4Way16 {
                 let mux = Mux16::new();
                 let and = TwoInOneOutGate::and();
                 select_by_idx(i, &result.sel, &and.inputs);
-                mux.input_a.feed_from(constant_false.clone());
-                mux.input_b.feed_from(result.inputs[i].clone());
+                mux.inputs[0].feed_from(constant_false.clone());
+                mux.inputs[1].feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and.output);
                 mux
             })
@@ -689,8 +686,8 @@ impl Mux8Way16 {
                     and_b.inputs[1].clone(),
                 ];
                 select_by_idx(i, &result.sel, &and_inputs);
-                mux.input_a.feed_from(constant_false.clone());
-                mux.input_b.feed_from(result.inputs[i].clone());
+                mux.inputs[0].feed_from(constant_false.clone());
+                mux.inputs[1].feed_from(result.inputs[i].clone());
                 mux.sel.feed_from(and_a.output);
                 mux
             })

@@ -98,73 +98,6 @@ fn test_full_adder() {
     }
 }
 
-// pub struct Add9 {
-//     inputs: [[Rc<Pin>; 9]; 2],
-//     pub output: [Rc<Pin>; 9],
-// }
-
-// impl Add9 {
-//     pub fn new() -> Self {
-//         let mut inputs: [[Rc<Pin>; 9]; 2] = Default::default();
-//         for i in 0..2 {
-//             for j in 0..9 {
-//                 inputs[i][j] = Pin::new();
-//             }
-//         }
-//         let mut output: [Rc<Pin>; 9] = Default::default();
-//         for i in 0..9 {
-//             output[i] = Pin::new();
-//         }
-//         let result = Self { inputs, output };
-
-//         let first_adder = HalfAdder::new();
-//         first_adder.inputs[0].feed_from(result.inputs[0][8].clone());
-//         first_adder.inputs[1].feed_from(result.inputs[1][8].clone());
-//         result.output[8].feed_from(first_adder.outputs[1].clone());
-//         let mut carry = first_adder.outputs[0].clone();
-//         for i in (0..8).rev() {
-//             let adder = FullAdder::new();
-//             adder.inputs[0].feed_from(result.inputs[0][i].clone());
-//             adder.inputs[1].feed_from(result.inputs[1][i].clone());
-//             adder.inputs[2].feed_from(carry);
-//             result.output[i].feed_from(adder.outputs[1].clone());
-//             carry = adder.outputs[0].clone();
-//         }
-
-//         result
-//     }
-// }
-
-// #[test]
-// fn test_add8() {
-//     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
-//     let add4 = Add9::new();
-//     for i in test_cases {
-//         for j in test_cases {
-//             let a = i16_to_bools(i);
-//             let input_a = [a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15]];
-//             let b = i16_to_bools(j);
-//             let input_b = [b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]];
-//             for i in 0..9 {
-//                 add4.inputs[0][i].value.set(input_a[i]);
-//                 add4.inputs[1][i].value.set(input_b[i]);
-//             }
-
-//             let mut result = [false; 9];
-//             for (pin_idx, pin) in add4.output.iter().enumerate() {
-//                 pin.compute();
-//                 result[pin_idx] = pin.value.get();
-//             }
-//             let ex = i16_to_bools((std::num::Wrapping(i) + std::num::Wrapping(j)).0);
-//             let expected = [
-//                 ex[7], ex[8], ex[9], ex[10], ex[11], ex[12], ex[13], ex[14], ex[15],
-//             ];
-//             assert_eq!(result, expected);
-//         }
-//     }
-// }
-
-// integer 2's complement addition - overflow is neither detected nor handled
 #[derive(Debug)]
 pub struct Add16 {
     inputs: [PinArray16; 2],
@@ -248,13 +181,13 @@ fn test_inc16() {
     }
 }
 
-struct IsNonZero {
-    output: Rc<Pin>,
-    input: PinArray16,
+struct IsNonZero16 {
+    pub output: Rc<Pin>,
+    pub input: PinArray16,
 }
 
-impl IsNonZero {
-    fn new() -> Self {
+impl IsNonZero16 {
+    pub fn new() -> Self {
         let output = Pin::new();
         let input = PinArray16::new();
         let result = Self { input, output };
@@ -278,7 +211,7 @@ impl IsNonZero {
 #[test]
 fn test_is_non_zero() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
-    let is_non_zero = IsNonZero::new();
+    let is_non_zero = IsNonZero16::new();
     for i in test_cases {
         is_non_zero.input.set_values(i16_to_bools(i));
         let result = compute_all(&[is_non_zero.output.clone()]);
@@ -287,97 +220,138 @@ fn test_is_non_zero() {
     }
 }
 
-struct ALUOutput {
-    out: PinArray16,
-    zr: Rc<Pin>,
-    ng: Rc<Pin>,
+struct ALU {
+    inputs: [PinArray16; 2],
+    output: PinArray16,
+    zero_inputs: [Rc<Pin>; 2],
+    not_inputs: [Rc<Pin>; 2],
+    use_add: Rc<Pin>,
+    not_output: Rc<Pin>,
+    output_is_zero: Rc<Pin>,
+    output_is_negative: Rc<Pin>,
 }
 
-// fn alu(
-//     x: [bool; 16],
-//     y: [bool; 16],
-//     zx: bool,
-//     nx: bool,
-//     zy: bool,
-//     ny: bool,
-//     f: bool,
-//     no: bool,
-// ) -> ALUOutput {
-//     let stage1x = mux16(x, [false; 16], zx);
-//     let stage1y = mux16(y, [false; 16], zy);
-//     let stage2x = mux16(stage1x, not16(stage1x), nx);
-//     let stage2y = mux16(stage1y, not16(stage1y), ny);
-//     let anded = and16(stage2x, stage2y);
-//     let added = add16(stage2x, stage2y);
-//     let fed = mux16(anded, added, f);
-//     let out = mux16(fed, not16(fed), no);
-//     let zr = not(is_non_zero(out));
-//     let ng = out[0];
-//     ALUOutput { out, zr, ng }
-// }
+impl ALU {
+    fn new() -> Self {
+        let result = Self {
+            inputs: [PinArray16::new(), PinArray16::new()],
+            output: PinArray16::new(),
+            zero_inputs: [Pin::new(), Pin::new()],
+            not_inputs: [Pin::new(), Pin::new()],
+            use_add: Pin::new(),
+            not_output: Pin::new(),
+            output_is_zero: Pin::new(),
+            output_is_negative: Pin::new(),
+        };
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::utils::binary;
+        let constant_false = PinArray16::new();
+        let and = TwoInOneOut16::and16();
+        let add = Add16::new();
 
-//     #[test]
-//     fn test_full_adder() {
-//         assert_eq!(full_adder(false, false, false), [false, false]);
-//         assert_eq!(full_adder(false, false, true), [false, true]);
-//         assert_eq!(full_adder(false, true, false), [false, true]);
-//         assert_eq!(full_adder(false, true, true), [true, false]);
-//         assert_eq!(full_adder(true, false, false), [false, true]);
-//         assert_eq!(full_adder(true, false, true), [true, false]);
-//         assert_eq!(full_adder(true, true, false), [true, false]);
-//         assert_eq!(full_adder(true, true, true), [true, true]);
-//     }
+        for i in 0..=1 {
+            let zeroing_mux = Mux16::new();
+            zeroing_mux.inputs[0].feed_from(result.inputs[i].clone());
+            zeroing_mux.inputs[1].feed_from(constant_false.clone());
+            zeroing_mux.sel.feed_from(result.zero_inputs[i].clone());
 
-//     #[test]
-//     fn test_add16() {
-//         assert_eq!(add16(binary(0), binary(0)), binary(0));
-//         assert_eq!(add16(binary(0), binary(1)), binary(1));
-//         assert_eq!(add16(binary(1), binary(0)), binary(1));
-//         assert_eq!(add16(binary(1), binary(-1)), binary(0));
-//         assert_eq!(add16(binary(123), binary(-123)), binary(0));
-//         assert_eq!(add16(binary(1000), binary(1000)), binary(2000));
-//     }
+            let not = Not16::new();
+            let not_input_mux = Mux16::new();
+            not.input.feed_from(zeroing_mux.output.clone());
 
-//     #[test]
-//     fn test_inc16() {
-//         fn test(num: i16) {
-//             let wrapped_num = std::num::Wrapping(num);
-//             let correct_result = (wrapped_num + std::num::Wrapping(1)).0;
-//             assert_eq!(inc16(binary(wrapped_num.0)), binary(correct_result));
-//         }
-//         test(0);
-//         test(123);
-//         test(i16::MAX);
-//     }
+            not_input_mux.inputs[0].feed_from(zeroing_mux.output);
+            not_input_mux.inputs[1].feed_from(not.output);
+            not_input_mux.sel.feed_from(result.not_inputs[i].clone());
 
-//     #[test]
-//     fn test_is_non_zero() {
-//         fn test(num: i16) {
-//             assert_eq!(is_non_zero(binary(num)), num != 0);
-//         }
-//         test(-1);
-//         test(123);
-//         test(-123);
-//         test(0);
-//     }
+            // TODO - could potentially be faster to dmux here to either go to
+            // AND or ADD, instead of always going to both?
+            and.inputs[i].feed_from(not_input_mux.output.clone());
+            add.inputs[i].feed_from(not_input_mux.output.clone());
+        }
+        let sel_function_mux = Mux16::new();
+        sel_function_mux.inputs[0].feed_from(and.output);
+        sel_function_mux.inputs[1].feed_from(add.output);
+        sel_function_mux.sel.feed_from(result.use_add.clone());
 
-//     #[test]
-//     fn test_alu_zero() {
-//         fn test(x: i16, y: i16) {
-//             let result = alu(binary(x), binary(y), true, false, true, false, true, false);
-//             assert_eq!(result.out, binary(0))
-//         }
-//         test(0, 0);
-//         test(1, 0);
-//         test(0, 1);
-//         test(123, 1234);
-//         test(-123, -1234);
-//     }
+        let not = Not16::new();
+        not.input.feed_from(sel_function_mux.output.clone());
+
+        let not_output_mux = Mux16::new();
+        not_output_mux.inputs[0].feed_from(sel_function_mux.output);
+        not_output_mux.inputs[1].feed_from(not.output);
+        not_output_mux.sel.feed_from(result.not_output.clone());
+
+        result.output.feed_from(not_output_mux.output.clone());
+        result
+            .output_is_negative
+            .feed_from(not_output_mux.output.pins[0].clone());
+
+        let is_non_zero = IsNonZero16::new();
+        is_non_zero.input.feed_from(not_output_mux.output);
+        let not = NotGate::new();
+        not.input.feed_from(is_non_zero.output);
+        result.output_is_zero.feed_from(not.output);
+
+        result
+    }
+
+    fn compute(&self) {
+        let mut all_output_pins = self.output.pins.to_vec();
+        all_output_pins.push(self.output_is_zero.clone());
+        all_output_pins.push(self.output_is_negative.clone());
+        compute_all(&all_output_pins);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const test_nums: [i16; 7] = [0, 1, 123, 1234, -123, i16::MAX, i16::MIN];
+
+    fn test_alu(
+        alu: ALU,
+        use_add: bool,
+        not_output: bool,
+        zero_inputs: [bool; 2],
+        not_inputs: [bool; 2],
+        f: fn(i16, i16) -> i16,
+    ) {
+        alu.use_add.value.set(use_add);
+        alu.not_output.value.set(not_output);
+        for test_num_a in test_nums {
+            alu.inputs[0].set_values(i16_to_bools(test_num_a));
+            for test_num_b in test_nums {
+                alu.inputs[1].set_values(i16_to_bools(test_num_b));
+                for i in 0..=1 {
+                    alu.zero_inputs[i].value.set(zero_inputs[i]);
+                    alu.not_inputs[i].value.set(not_inputs[i]);
+                }
+                alu.compute();
+                let expected_result = f(test_num_a, test_num_b);
+                assert_eq!(alu.output.get_values(), i16_to_bools(expected_result));
+                assert_eq!(alu.output_is_zero.value.get(), expected_result == 0);
+                assert_eq!(alu.output_is_negative.value.get(), expected_result < 0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_alu_zero() {
+        test_alu(
+            ALU::new(),
+            true,
+            false,
+            [true, true],
+            [false, false],
+            |_, _| 0,
+        )
+    }
+
+    #[test]
+    fn test_alu_one() {
+        test_alu(ALU::new(), true, true, [true, true], [true, true], |_, _| 1)
+    }
+}
 
 //     #[test]
 //     fn test_alu_one() {

@@ -78,10 +78,8 @@ impl PinArray16 {
         }
     }
 
-    pub fn compute(&self) {
-        for pin in &self.pins {
-            pin.compute();
-        }
+    pub fn get_values(&self) -> Vec<bool> {
+        self.pins.iter().map(|pin| pin.value.get()).collect()
     }
 
     pub fn set_values(&self, values: [bool; 16]) {
