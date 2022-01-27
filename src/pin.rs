@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-static mut PIN_COUNT: i32 = 0;
+thread_local!(static PIN_COUNT: Cell<usize> = Cell::new(0));
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Connection {
@@ -12,22 +12,24 @@ pub enum Connection {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pin {
-    debug_id: i32,
+    debug_id: usize,
     pub value: Cell<bool>,
     pub connection: RefCell<Option<Connection>>,
 }
 
 impl Pin {
     pub fn new() -> Rc<Self> {
-        unsafe {
-            PIN_COUNT += 1;
-            // println!("create pin {}", PIN_COUNT);
-            Rc::new(Self {
-                debug_id: PIN_COUNT,
-                value: Cell::new(false),
-                connection: RefCell::new(None),
-            })
-        }
+        let mut debug_id = 0;
+        PIN_COUNT.with(|thread_id| {
+            debug_id = thread_id.get();
+            thread_id.set(debug_id + 1);
+        });
+        // println!("create pin {}", PIN_COUNT);
+        Rc::new(Self {
+            debug_id,
+            value: Cell::new(false),
+            connection: RefCell::new(None),
+        })
     }
     pub fn feed_from(&self, pin: Rc<Pin>) {
         let mut connection = self.connection.borrow_mut();
