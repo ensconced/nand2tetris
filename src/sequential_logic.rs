@@ -36,6 +36,29 @@ fn test_flipflop() {
     assert_eq!(flipflop.output.value.get(), false);
 }
 
+#[test]
+fn test_flipflop_chain() {
+    let mut flip_flops: Vec<FlipFlop> = vec![];
+    for i in 0..10 {
+        let flip_flop = FlipFlop::new();
+        if i > 0 {
+            flip_flop.input.feed_from(flip_flops[i - 1].output.clone());
+        }
+        flip_flops.push(flip_flop);
+    }
+    flip_flops[0].input.value.set(true);
+    for i in 0..9 {
+        for flip_flop in flip_flops.iter() {
+            flip_flop.tick();
+        }
+    }
+    assert_eq!(flip_flops[9].output.value.get(), false);
+    for flip_flop in flip_flops.iter() {
+        flip_flop.tick();
+    }
+    assert_eq!(flip_flops[9].output.value.get(), true);
+}
+
 struct BitRegister {
     input: Rc<Pin>,
     output: Rc<Pin>,
