@@ -1,3 +1,99 @@
+use crate::boolean_logic::Mux;
+use crate::ordering::compute_all;
+use crate::pin::Pin;
+use std::rc::Rc;
+
+struct FlipFlop {
+    input: Rc<Pin>,
+    output: Rc<Pin>,
+}
+
+impl FlipFlop {
+    fn new() -> Self {
+        let input = Pin::new();
+        let output = Pin::new();
+        output.flipflop_connect(input.clone());
+        Self { input, output }
+    }
+
+    fn tick(&self) {
+        self.output.value.set(self.input.value.get());
+    }
+}
+
+#[test]
+fn test_flipflop() {
+    let flipflop = FlipFlop::new();
+    assert_eq!(flipflop.input.value.get(), false);
+    assert_eq!(flipflop.output.value.get(), false);
+    flipflop.input.value.set(true);
+    assert_eq!(flipflop.output.value.get(), false);
+    flipflop.tick();
+    assert_eq!(flipflop.output.value.get(), true);
+    flipflop.input.value.set(false);
+    assert_eq!(flipflop.output.value.get(), true);
+    flipflop.tick();
+    assert_eq!(flipflop.output.value.get(), false);
+}
+
+struct BitRegister {
+    input: Rc<Pin>,
+    output: Rc<Pin>,
+    load: Rc<Pin>,
+    flipflop: FlipFlop,
+}
+
+impl BitRegister {
+    fn new() -> Self {
+        let result = Self {
+            input: Pin::new(),
+            output: Pin::new(),
+            load: Pin::new(),
+            flipflop: FlipFlop::new(),
+        };
+
+        result.output.feed_from(result.flipflop.output.clone());
+        let mux = Mux::new();
+        mux.input_a.feed_from(result.flipflop.output.clone());
+        result.flipflop.input.feed_from(mux.output);
+        mux.sel.feed_from(result.load.clone());
+        mux.input_b.feed_from(result.input.clone());
+
+        result
+    }
+
+    fn tick(&self) {
+        self.flipflop.tick();
+    }
+}
+
+#[test]
+fn test_bit_register() {
+    let bit = BitRegister::new();
+
+    // is properly initialised
+    assert_eq!(bit.input.value.get(), false);
+    assert_eq!(bit.output.value.get(), false);
+    assert_eq!(bit.load.value.get(), false);
+
+    // setting the input and ticking without setting the load bit shouldn't
+    // change the output
+    bit.input.value.set(true);
+    bit.tick();
+    let output_val = compute_all(&[bit.output.clone()])[0];
+    assert_eq!(output_val, false);
+
+    // setting the load bit doesn't change the output value until you tick
+    bit.load.value.set(true);
+    let output_val = compute_all(&[bit.output.clone()])[0];
+    assert_eq!(output_val, false);
+
+    // when you do tick, the output value does change...
+    bit.tick();
+    let output_val = compute_all(&[bit.output])[0];
+    assert_eq!(output_val, true);
+}
+
 // #[derive(Default)]
 // struct BitRegister {
 //     pub input: bool,

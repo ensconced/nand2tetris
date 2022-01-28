@@ -8,6 +8,7 @@ thread_local!(static PIN_COUNT: Cell<usize> = Cell::new(0));
 pub enum Connection {
     Eq(Rc<Pin>),
     Nand(Rc<Pin>, Rc<Pin>),
+    FlipFlop(Rc<Pin>),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -43,12 +44,17 @@ impl Pin {
             .borrow_mut()
             .replace(Connection::Nand(input_a, input_b));
     }
+    pub fn flipflop_connect(&self, input: Rc<Pin>) {
+        self.connection
+            .borrow_mut()
+            .replace(Connection::FlipFlop(input));
+    }
     pub fn compute(&self) {
         // println!("computing pin {}", self.debug_id);
         let new_value = match self.connection.borrow().as_ref() {
             Some(Connection::Eq(pin)) => pin.value.get(),
             Some(Connection::Nand(pin_a, pin_b)) => !(pin_a.value.get() && pin_b.value.get()),
-            None => self.value.get(),
+            _ => self.value.get(),
         };
         self.value.set(new_value);
     }

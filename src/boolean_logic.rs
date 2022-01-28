@@ -181,15 +181,15 @@ fn test_not_gate() {
 }
 
 #[derive(Default)]
-struct Mux {
-    input_a: Rc<Pin>,
-    input_b: Rc<Pin>,
-    sel: Rc<Pin>,
-    output: Rc<Pin>,
+pub struct Mux {
+    pub input_a: Rc<Pin>,
+    pub input_b: Rc<Pin>,
+    pub sel: Rc<Pin>,
+    pub output: Rc<Pin>,
 }
 
 impl Mux {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let input_a = Pin::new();
         let input_b = Pin::new();
         let sel = Pin::new();

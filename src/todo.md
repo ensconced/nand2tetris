@@ -1,4 +1,4 @@
-debugging add16
+do we need a new connection enum variant for flipflops, to allow properly including everything in graph?
 
 - conditionally include debug output
 - write util to parse debug output into regraph playground - with each component in combo...

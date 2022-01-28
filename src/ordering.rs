@@ -38,6 +38,9 @@ fn reverse_topological_sort(all_pins: HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
                 visit(pin_a, done, doing, result);
                 visit(pin_b, done, doing, result);
             }
+            Some(Connection::FlipFlop(pin)) => {
+                visit(pin, done, doing, result);
+            }
             None => {}
         }
 
@@ -83,6 +86,7 @@ mod test_reverse_topological_sort {
             match pin.connection.borrow().as_ref() {
                 Some(Connection::Eq(pin_a)) => follows(pin, pin_a),
                 Some(Connection::Nand(pin_a, pin_b)) => follows(pin, pin_a) && follows(pin, pin_b),
+                Some(Connection::FlipFlop(pin_a)) => follows(pin, pin_a),
                 None => true,
             }
         })
@@ -171,6 +175,7 @@ fn all_connected_pins(outputs: Vec<Rc<Pin>>) -> HashSet<Rc<Pin>> {
                 add_connected_pins(pin_a.clone(), all_connected);
                 add_connected_pins(pin_b.clone(), all_connected);
             }
+            Some(Connection::FlipFlop(pin)) => add_connected_pins(pin.clone(), all_connected),
             None => {}
         }
     }
