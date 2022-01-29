@@ -101,7 +101,7 @@ fn test_full_adder() {
 
 #[derive(Debug)]
 pub struct Add16 {
-    inputs: [PinArray16; 2],
+    pub inputs: [PinArray16; 2],
     pub output: PinArray16,
 }
 

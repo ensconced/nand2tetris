@@ -38,10 +38,10 @@ fn reverse_topological_sort(all_pins: HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
                 visit(pin_a, done, doing, result);
                 visit(pin_b, done, doing, result);
             }
-            Some(Connection::FlipFlop(pin)) => {
-                visit(pin, done, doing, result);
-            }
-            None => {}
+            // Some(Connection::FlipFlop(pin)) => {
+            //     visit(pin, done, doing, result);
+            // }
+            _ => {}
         }
 
         doing.remove(node);

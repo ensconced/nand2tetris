@@ -557,10 +557,10 @@ impl OrFunnel8Way16 {
     }
 }
 
-struct Mux4Way16 {
-    inputs: [PinArray16; 4],
-    sel: [Rc<Pin>; 2],
-    output: PinArray16,
+pub struct Mux4Way16 {
+    pub inputs: [PinArray16; 4],
+    pub sel: [Rc<Pin>; 2],
+    pub output: PinArray16,
 }
 
 fn select_by_idx(idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
@@ -578,7 +578,7 @@ fn select_by_idx(idx: usize, sel: &[Rc<Pin>], and_inputs: &[Rc<Pin>]) {
 }
 
 impl Mux4Way16 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let inputs: [PinArray16; 4] = [
             PinArray16::new(),
             PinArray16::new(),
@@ -652,14 +652,14 @@ fn test_mux4way16() {
     }
 }
 
-struct Mux8Way16 {
-    inputs: [PinArray16; 8],
-    sel: [Rc<Pin>; 3],
-    output: PinArray16,
+pub struct Mux8Way16 {
+    pub inputs: [PinArray16; 8],
+    pub sel: [Rc<Pin>; 3],
+    pub output: PinArray16,
 }
 
 impl Mux8Way16 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut inputs: [PinArray16; 8] = Default::default();
         for i in 0..8 {
             inputs[i] = PinArray16::new();
@@ -731,14 +731,14 @@ fn test_mux8way16() {
     }
 }
 
-struct DMux4Way {
-    input: Rc<Pin>,
-    sel: [Rc<Pin>; 2],
-    outputs: [Rc<Pin>; 4],
+pub struct DMux4Way {
+    pub input: Rc<Pin>,
+    pub sel: [Rc<Pin>; 2],
+    pub outputs: [Rc<Pin>; 4],
 }
 
 impl DMux4Way {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let input = Pin::new();
         let sel: [Rc<Pin>; 2] = [Pin::new(), Pin::new()];
         let output: [Rc<Pin>; 4] = [Pin::new(), Pin::new(), Pin::new(), Pin::new()];
@@ -777,14 +777,14 @@ fn test_dmux_4_way() {
     }
 }
 
-struct DMux8Way {
-    input: Rc<Pin>,
-    sel: [Rc<Pin>; 3],
-    outputs: [Rc<Pin>; 8],
+pub struct DMux8Way {
+    pub input: Rc<Pin>,
+    pub sel: [Rc<Pin>; 3],
+    pub outputs: [Rc<Pin>; 8],
 }
 
 impl DMux8Way {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let input = Pin::new();
         let sel: [Rc<Pin>; 3] = [Pin::new(), Pin::new(), Pin::new()];
         let mut outputs: [Rc<Pin>; 8] = Default::default();

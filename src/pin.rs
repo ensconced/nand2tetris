@@ -25,7 +25,6 @@ impl Pin {
             debug_id = thread_id.get();
             thread_id.set(debug_id + 1);
         });
-        // println!("create pin {}", PIN_COUNT);
         Rc::new(Self {
             debug_id,
             value: Cell::new(false),
@@ -50,7 +49,6 @@ impl Pin {
             .replace(Connection::FlipFlop(input));
     }
     pub fn compute(&self) {
-        // println!("computing pin {}", self.debug_id);
         let new_value = match self.connection.borrow().as_ref() {
             Some(Connection::Eq(pin)) => pin.value.get(),
             Some(Connection::Nand(pin_a, pin_b)) => !(pin_a.value.get() && pin_b.value.get()),
