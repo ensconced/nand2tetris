@@ -1,4 +1,4 @@
-use crate::ordering::{all_connected_pins, compute_all};
+use crate::ordering::{compute_all, get_all_connected_pins};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::{bools_to_usize, i16_to_bools, u8_to_bools};
 use std::cell::{Cell, RefCell};
@@ -9,7 +9,7 @@ const TEST_NUMS: [i16; 6] = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
 // TODO - might be good to use macro for this to allow different number of
 // inputs and automatically generating full set of inputs
 fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> bool) {
-    let pins = all_connected_pins(vec![gate.output.clone()]);
+    let pins = get_all_connected_pins(vec![gate.output.clone()]);
     let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
     for input in all_inputs {
         gate.inputs[0].value.set(input[0]);
@@ -20,7 +20,7 @@ fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> 
 }
 
 fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool) {
-    let all_pins = all_connected_pins(vec![gate.output.clone()]);
+    let all_pins = get_all_connected_pins(vec![gate.output.clone()]);
     let all_inputs = [
         [false, false, false],
         [false, false, true],
@@ -41,7 +41,7 @@ fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool
 }
 
 fn exhaustively_test_two_in_two_out(gate: DMux, f: fn(bool, bool) -> [bool; 2]) {
-    let all_pins = all_connected_pins([gate.output_a.clone(), gate.output_b.clone()].to_vec());
+    let all_pins = get_all_connected_pins([gate.output_a.clone(), gate.output_b.clone()].to_vec());
     let all_inputs = [[false, false], [false, true], [true, false], [true, true]];
     for input in all_inputs {
         gate.input.value.set(input[0]);
@@ -175,7 +175,7 @@ impl NotGate {
 #[test]
 fn test_not_gate() {
     let not_gate = NotGate::new();
-    let all_pins = all_connected_pins(vec![not_gate.output.clone()]);
+    let all_pins = get_all_connected_pins(vec![not_gate.output.clone()]);
     not_gate.input.value.set(true);
     let result = compute_all(&[not_gate.output.clone()], &all_pins);
     assert_eq!(result[0], false);
@@ -301,7 +301,7 @@ impl Not16 {
 fn test_not16() {
     for num in TEST_NUMS {
         let not16 = Not16::new();
-        let all_pins = all_connected_pins(not16.output.pins.to_vec());
+        let all_pins = get_all_connected_pins(not16.output.pins.to_vec());
         not16.input.set_values(i16_to_bools(num));
         let result = compute_all(&not16.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(!num));
@@ -346,7 +346,7 @@ fn test_and16() {
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
             let and16 = TwoInOneOut16::and16();
-            let all_pins = all_connected_pins(and16.output.pins.to_vec());
+            let all_pins = get_all_connected_pins(and16.output.pins.to_vec());
             let test_input_a = i16_to_bools(num_a);
             let test_input_b = i16_to_bools(num_b);
             and16.inputs[0].set_values(test_input_a);
@@ -363,7 +363,7 @@ fn test_or16() {
     for num_a in TEST_NUMS {
         for num_b in TEST_NUMS {
             let or16 = TwoInOneOut16::or16();
-            let all_pins = all_connected_pins(or16.output.pins.to_vec());
+            let all_pins = get_all_connected_pins(or16.output.pins.to_vec());
             let test_input_a = i16_to_bools(num_a);
             let test_input_b = i16_to_bools(num_b);
             or16.inputs[0].set_values(test_input_a);
@@ -411,7 +411,7 @@ fn test_mux16() {
         for num_b in TEST_NUMS {
             for sel in [true, false] {
                 let mux16 = Mux16::new();
-                let all_pins = all_connected_pins(mux16.output.pins.to_vec());
+                let all_pins = get_all_connected_pins(mux16.output.pins.to_vec());
                 let test_input_a = i16_to_bools(num_a);
                 let test_input_b = i16_to_bools(num_b);
                 mux16.inputs[0].set_values(test_input_a);
@@ -473,7 +473,7 @@ impl Or8Way {
 #[test]
 fn test_or8way() {
     let or8way = Or8Way::new();
-    let all_pins = all_connected_pins(vec![or8way.output.clone()]);
+    let all_pins = get_all_connected_pins(vec![or8way.output.clone()]);
     let test_bytes = [0, 1, 2, 123, u8::MAX];
     for num in test_bytes {
         let test_input = u8_to_bools(num);
@@ -526,7 +526,7 @@ impl OrFunnel {
 #[test]
 fn test_or_n_way_16() {
     let funnel = OrFunnel::new(32);
-    let all_pins = all_connected_pins(funnel.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(funnel.output.pins.to_vec());
     for pin_array in funnel.inputs.iter() {
         pin_array.set_values([false; 16]);
     }
@@ -636,7 +636,7 @@ fn test_mux4way16() {
     for [num_a, num_b, num_c, num_d] in test_cases {
         for sel in [[false, false], [false, true], [true, false], [true, true]] {
             let mux = Mux4Way16::new();
-            let all_pins = all_connected_pins(mux.output.pins.to_vec());
+            let all_pins = get_all_connected_pins(mux.output.pins.to_vec());
             mux.inputs[0].set_values(i16_to_bools(num_a));
             mux.inputs[1].set_values(i16_to_bools(num_b));
             mux.inputs[2].set_values(i16_to_bools(num_c));
@@ -729,7 +729,7 @@ fn test_mux8way16() {
             [true, true, false],
         ] {
             let mux = Mux8Way16::new();
-            let all_pins = all_connected_pins(mux.output.pins.to_vec());
+            let all_pins = get_all_connected_pins(mux.output.pins.to_vec());
             for i in 0..8 {
                 mux.inputs[i].set_values(i16_to_bools(test_case[i]));
             }
@@ -776,7 +776,7 @@ impl DMux4Way {
 #[test]
 fn test_dmux_4_way() {
     let dmux = DMux4Way::new();
-    let all_pins = all_connected_pins(dmux.outputs.to_vec());
+    let all_pins = get_all_connected_pins(dmux.outputs.to_vec());
     for val in [false, true] {
         for sel_pin_idx in 0..4 {
             dmux.input.value.set(val);
@@ -833,7 +833,7 @@ impl DMux8Way {
 #[test]
 fn test_dmux_8_way() {
     let dmux = DMux8Way::new();
-    let all_pins = all_connected_pins(dmux.outputs.to_vec());
+    let all_pins = get_all_connected_pins(dmux.outputs.to_vec());
     for val in [false, true] {
         for sel_pin_idx in 0..8 {
             dmux.input.value.set(val);

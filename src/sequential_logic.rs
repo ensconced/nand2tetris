@@ -1,6 +1,6 @@
 use crate::boolean_arithmetic::Add16;
 use crate::boolean_logic::{DMux4Way, DMux8Way, Mux, Mux16, Mux4Way16, Mux8Way16, TwoInOneOutGate};
-use crate::ordering::{all_connected_pins, compute_all};
+use crate::ordering::{compute_all, get_all_connected_pins};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::i16_to_bools;
 use std::rc::Rc;
@@ -45,7 +45,7 @@ fn test_flip_flop_pair() {
     let flipflop_b = FlipFlop::new();
     flipflop_b.input.feed_from(flipflop_a.output.clone());
 
-    let all_pins = all_connected_pins(vec![flipflop_b.output.clone()]);
+    let all_pins = get_all_connected_pins(vec![flipflop_b.output.clone()]);
 
     flipflop_a.input.value.set(true);
     assert_eq!(flipflop_a.output.value.get(), false);
@@ -73,7 +73,7 @@ fn test_flipflop_chain() {
         flip_flops.push(flip_flop);
     }
 
-    let all_pins = all_connected_pins(vec![flip_flops[9].output.clone()]);
+    let all_pins = get_all_connected_pins(vec![flip_flops[9].output.clone()]);
 
     flip_flops[0].input.value.set(true);
 
@@ -129,7 +129,7 @@ impl BitRegister {
 #[test]
 fn test_bit_register() {
     let bit = BitRegister::new();
-    let all_pins = all_connected_pins(vec![bit.output.clone()]);
+    let all_pins = get_all_connected_pins(vec![bit.output.clone()]);
 
     // is properly initialised
     assert_eq!(bit.input.value.get(), false);
@@ -191,7 +191,7 @@ impl Register {
 fn test_register() {
     let test_nums = [0, 1, 1234, i16::MIN, i16::MAX / 2, i16::MAX];
     let register = Register::new();
-    let all_pins = all_connected_pins(register.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(register.output.pins.to_vec());
 
     for test_num in test_nums {
         let num_as_bools = i16_to_bools(test_num);
@@ -278,7 +278,7 @@ impl Ram8 {
 #[test]
 fn test_ram8() {
     let ram = Ram8::new();
-    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
 
     let val_a = i16_to_bools(1234);
     let addr_a = [false, false, true];
@@ -381,7 +381,7 @@ impl Ram64 {
 #[test]
 fn test_ram_64() {
     let ram = Ram64::new();
-    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
 
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram8
@@ -476,7 +476,7 @@ impl Ram512 {
 #[test]
 fn test_ram_512() {
     let ram = Ram512::new();
-    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
 
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram64
@@ -572,7 +572,7 @@ impl Ram4k {
 #[test]
 fn test_ram_4k() {
     let ram = Ram4k::new();
-    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
 
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram512
@@ -673,7 +673,7 @@ impl Ram16k {
 #[test]
 fn test_ram_16k() {
     let ram = Ram16k::new();
-    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram4k
     let addrs = [
@@ -781,7 +781,7 @@ impl Counter {
 #[test]
 fn test_counter() {
     let counter = Counter::new();
-    let all_pins = all_connected_pins(counter.output.pins.to_vec());
+    let all_pins = get_all_connected_pins(counter.output.pins.to_vec());
 
     counter.load.value.set(true);
     counter.input.set_values(i16_to_bools(47));

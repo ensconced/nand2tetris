@@ -4,11 +4,27 @@ use std::rc::Rc;
 
 thread_local!(static PIN_COUNT: Cell<usize> = Cell::new(0));
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Connection {
     Eq(Rc<Pin>),
     Nand(Rc<Pin>, Rc<Pin>),
     FlipFlop(Rc<Pin>),
+}
+
+impl Connection {
+    pub fn pins(&self) -> Vec<Rc<Pin>> {
+        match self {
+            Self::Eq(pin) => {
+                vec![pin.clone()]
+            }
+            Self::Nand(pin_a, pin_b) => {
+                vec![pin_a.clone(), pin_b.clone()]
+            }
+            Self::FlipFlop(pin) => {
+                vec![pin.clone()]
+            }
+        }
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]

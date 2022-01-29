@@ -1,5 +1,5 @@
 use crate::boolean_logic::{Mux16, Not16, NotGate, Or8Way, TwoInOneOut16, TwoInOneOutGate};
-use crate::ordering::{all_connected_pins, compute_all};
+use crate::ordering::{compute_all, get_all_connected_pins};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::{bools_to_usize, i16_to_bools, last_2, last_3, u8_to_bools};
 use std::num::Wrapping;
@@ -42,7 +42,7 @@ fn test_half_adder() {
     ];
 
     let half_adder = HalfAdder::new();
-    let pins = all_connected_pins(half_adder.outputs.to_vec());
+    let pins = get_all_connected_pins(half_adder.outputs.to_vec());
     for test_case in test_cases {
         let [inputs, expected_outputs] = test_case;
         for i in 0..=1 {
@@ -90,7 +90,7 @@ impl FullAdder {
 fn test_full_adder() {
     for i in 0..8 {
         let full_adder = FullAdder::new();
-        let pins = all_connected_pins(full_adder.outputs.to_vec());
+        let pins = get_all_connected_pins(full_adder.outputs.to_vec());
         let inputs = last_3(u8_to_bools(i as u8));
         for i in 0..3 {
             full_adder.inputs[i].value.set(inputs[i]);
@@ -135,7 +135,7 @@ impl Add16 {
 fn test_add16() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let add16 = Add16::new();
-    let pins = all_connected_pins(add16.output.pins.to_vec());
+    let pins = get_all_connected_pins(add16.output.pins.to_vec());
     for i in test_cases {
         for j in test_cases {
             let input_a = i16_to_bools(i);
@@ -175,7 +175,7 @@ impl Inc16 {
 fn test_inc16() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let inc16 = Inc16::new();
-    let pins = all_connected_pins(inc16.output.pins.to_vec());
+    let pins = get_all_connected_pins(inc16.output.pins.to_vec());
     for i in test_cases {
         for _ in test_cases {
             inc16.input.set_values(i16_to_bools(i));
@@ -217,7 +217,7 @@ impl IsNonZero16 {
 fn test_is_non_zero() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let is_non_zero = IsNonZero16::new();
-    let pins = all_connected_pins(vec![is_non_zero.output.clone()]);
+    let pins = get_all_connected_pins(vec![is_non_zero.output.clone()]);
     for i in test_cases {
         is_non_zero.input.set_values(i16_to_bools(i));
         let output_pins = [is_non_zero.output.clone()];
@@ -319,7 +319,7 @@ mod test {
         let mut output_pins = alu.output.pins.to_vec();
         output_pins.push(alu.output_is_zero.clone());
         output_pins.push(alu.output_is_negative.clone());
-        let all_pins = all_connected_pins(output_pins.to_vec());
+        let all_pins = get_all_connected_pins(output_pins.to_vec());
 
         alu.use_add.value.set(use_add);
         alu.not_output.value.set(not_output);
