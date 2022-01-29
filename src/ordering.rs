@@ -3,7 +3,13 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 pub fn compute_all(output_pins: &[Rc<Pin>]) -> Vec<bool> {
-    for pin in reverse_topological_sort(all_connected_pins(output_pins.to_vec())) {
+    println!("finding connected pins");
+    let connected_pins = all_connected_pins(output_pins.to_vec());
+    println!("found {} connected pins", connected_pins.len());
+    println!("sorting pins");
+    let sorted_pins = reverse_topological_sort(connected_pins);
+    for (idx, pin) in sorted_pins.iter().enumerate() {
+        println!("computing pin {} of {}", idx, sorted_pins.len());
         pin.compute();
     }
     output_pins.iter().map(|pin| pin.value.get()).collect()

@@ -406,17 +406,17 @@ fn test_ram_64() {
     }
 }
 #[derive(Default)]
-struct Ram512 {
+pub struct Ram512 {
     // TODO - would be nice to be able to remove these
     ram64s: [Ram64; 8],
-    input: PinArray16,
-    output: PinArray16,
-    address: [Rc<Pin>; 9],
-    load: Rc<Pin>,
+    pub input: PinArray16,
+    pub output: PinArray16,
+    pub address: [Rc<Pin>; 9],
+    pub load: Rc<Pin>,
 }
 
 impl Ram512 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut result = Self {
             ram64s: Default::default(),
             input: PinArray16::new(),
@@ -455,7 +455,7 @@ impl Ram512 {
         result
     }
 
-    fn tick(&self) {
+    pub fn tick(&self) {
         for ram64 in self.ram64s.iter() {
             ram64.tick();
         }
@@ -501,17 +501,17 @@ fn test_ram_512() {
 }
 
 #[derive(Default)]
-struct Ram4k {
+pub struct Ram4k {
     // TODO - would be nice to be able to remove these
     ram512s: [Box<Ram512>; 8],
-    input: PinArray16,
-    output: PinArray16,
-    address: [Rc<Pin>; 12],
-    load: Rc<Pin>,
+    pub input: PinArray16,
+    pub output: PinArray16,
+    pub address: [Rc<Pin>; 12],
+    pub load: Rc<Pin>,
 }
 
 impl Ram4k {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut result = Self {
             ram512s: Default::default(),
             input: PinArray16::new(),
@@ -550,7 +550,7 @@ impl Ram4k {
         result
     }
 
-    fn tick(&self) {
+    pub fn tick(&self) {
         for ram512 in self.ram512s.iter() {
             ram512.tick();
         }
@@ -600,17 +600,17 @@ fn test_ram_4k() {
     }
 }
 
-struct Ram16k {
+pub struct Ram16k {
     // TODO - would be nice to be able to remove these
     ram4ks: [Ram4k; 4],
-    input: PinArray16,
-    output: PinArray16,
-    address: [Rc<Pin>; 14],
-    load: Rc<Pin>,
+    pub input: PinArray16,
+    pub output: PinArray16,
+    pub address: [Rc<Pin>; 14],
+    pub load: Rc<Pin>,
 }
 
 impl Ram16k {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut result = Self {
             ram4ks: Default::default(),
             input: PinArray16::new(),
@@ -649,7 +649,7 @@ impl Ram16k {
         result
     }
 
-    fn tick(&self) {
+    pub fn tick(&self) {
         for ram4k in self.ram4ks.iter() {
             ram4k.tick();
         }
