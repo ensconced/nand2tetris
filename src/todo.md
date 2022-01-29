@@ -8,6 +8,8 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 performance ideas
 
 - profiling!
+- only do sorting once - not every time in sort_and_compute (although a function
+  that does it all will probably we handy for making tests less verbose)
 - on tick, only compute downstream from changed pins?
 - remove useless pins (i.e. compress long chains)
 - convert graph from linked-list style to more data-oriented format before
