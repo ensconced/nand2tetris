@@ -12,6 +12,7 @@ performance ideas
   that does it all will probably we handy for making tests less verbose)
 - on tick, only compute downstream from changed pins?
 - remove useless pins (i.e. compress long chains)
+- threading
 - convert graph from linked-list style to more data-oriented format before
   computation - vec of raw Pins without Rc? - connections are only necessary for
   flipflops and can use indices instead of refs

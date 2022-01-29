@@ -2,6 +2,7 @@ use crate::pin::{Connection, Pin};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+// TODO - move this to test utils - it shouldn't be used besides in tests for performance reasons...
 pub fn sort_and_compute(output_pins: &[Rc<Pin>], all_pins: &HashSet<Rc<Pin>>) -> Vec<bool> {
     println!("sorting pins");
     let sorted_pins = reverse_topological_sort(all_pins);
@@ -12,7 +13,7 @@ pub fn sort_and_compute(output_pins: &[Rc<Pin>], all_pins: &HashSet<Rc<Pin>>) ->
     output_pins.iter().map(|pin| pin.value.get()).collect()
 }
 
-fn reverse_topological_sort(all_pins: &HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
+pub fn reverse_topological_sort(all_pins: &HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
     let mut done = HashSet::new();
     let mut doing = HashSet::new();
     let mut all_pins_iter = all_pins.into_iter();
@@ -41,9 +42,6 @@ fn reverse_topological_sort(all_pins: &HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
                 visit(pin_a, done, doing, result);
                 visit(pin_b, done, doing, result);
             }
-            // Some(Connection::FlipFlop(pin)) => {
-            //     visit(pin, done, doing, result);
-            // }
             _ => {}
         }
 
@@ -89,8 +87,7 @@ mod test_reverse_topological_sort {
             match pin.connection.borrow().as_ref() {
                 Some(Connection::Eq(pin_a)) => follows(pin, pin_a),
                 Some(Connection::Nand(pin_a, pin_b)) => follows(pin, pin_a) && follows(pin, pin_b),
-                Some(Connection::FlipFlop(pin_a)) => follows(pin, pin_a),
-                None => true,
+                _ => true,
             }
         })
     }
@@ -116,7 +113,7 @@ mod test_reverse_topological_sort {
         let pin_a = Pin::new();
         let pin_b = Pin::new();
         pin_a.feed_from(pin_b.clone());
-        let sorted = reverse_topological_sort(&get_all_connected_pins(vec![pin_a.clone()]));
+        let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![pin_a.clone()]));
         assert_eq!(sorted, vec![pin_b, pin_a]);
     }
 
@@ -129,7 +126,7 @@ mod test_reverse_topological_sort {
             current_pin.feed_from(pin.clone());
             current_pin = pin;
         }
-        let sorted = reverse_topological_sort(&get_all_connected_pins(vec![output_pin]));
+        let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![output_pin]));
         assert_eq!(sorted.len(), 11);
         assert!(pins_are_in_order(sorted));
     }
@@ -137,7 +134,7 @@ mod test_reverse_topological_sort {
     #[test]
     fn single_nand() {
         let nand = TwoInOneOutGate::nand();
-        let sorted = reverse_topological_sort(&get_all_connected_pins(vec![nand.output]));
+        let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![nand.output]));
         assert_eq!(sorted.len(), 3);
         assert!(pins_are_in_order(sorted));
     }
@@ -145,7 +142,7 @@ mod test_reverse_topological_sort {
     #[test]
     fn single_xor() {
         let xor = TwoInOneOutGate::xor();
-        let sorted = reverse_topological_sort(&get_all_connected_pins(vec![xor.output]));
+        let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![xor.output]));
         // xor consists of 4 nands plus its own two input and single output pins
         assert_eq!(sorted.len(), 15);
         assert!(pins_are_in_order(sorted));
@@ -154,31 +151,32 @@ mod test_reverse_topological_sort {
     #[test]
     fn full_adder() {
         let full_adder = FullAdder::new();
-        let sorted = reverse_topological_sort(&get_all_connected_pins(full_adder.outputs.to_vec()));
+        let sorted =
+            reverse_topological_sort(&get_all_connected_pins(&full_adder.outputs.to_vec()));
         assert!(pins_are_in_order(sorted));
     }
 
     #[test]
     fn add16() {
         let add16 = Add16::new();
-        let sorted = reverse_topological_sort(&get_all_connected_pins(add16.output.pins.to_vec()));
+        let sorted = reverse_topological_sort(&get_all_connected_pins(&add16.output.pins.to_vec()));
         assert!(pins_are_in_order(sorted));
     }
 }
 
-pub fn get_all_connected_pins(outputs: Vec<Rc<Pin>>) -> HashSet<Rc<Pin>> {
-    fn add_connected_pins(pin: Rc<Pin>, all_connected: &mut HashSet<Rc<Pin>>) {
-        if all_connected.contains(&pin) {
+pub fn get_all_connected_pins(outputs: &Vec<Rc<Pin>>) -> HashSet<Rc<Pin>> {
+    fn add_connected_pins(pin: &Rc<Pin>, all_connected: &mut HashSet<Rc<Pin>>) {
+        if all_connected.contains(pin) {
             return;
         }
         all_connected.insert(pin.clone());
         match pin.connection.borrow().as_ref() {
-            Some(Connection::Eq(pin)) => add_connected_pins(pin.clone(), all_connected),
+            Some(Connection::Eq(pin)) => add_connected_pins(pin, all_connected),
             Some(Connection::Nand(pin_a, pin_b)) => {
-                add_connected_pins(pin_a.clone(), all_connected);
-                add_connected_pins(pin_b.clone(), all_connected);
+                add_connected_pins(pin_a, all_connected);
+                add_connected_pins(pin_b, all_connected);
             }
-            Some(Connection::FlipFlop(pin)) => add_connected_pins(pin.clone(), all_connected),
+            Some(Connection::FlipFlop(pin)) => add_connected_pins(pin, all_connected),
             None => {}
         }
     }
@@ -197,7 +195,7 @@ mod test_all_connected_pins {
     #[test]
     fn empty_set() {
         let outputs = Vec::new();
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         assert_eq!(result, HashSet::new());
     }
 
@@ -205,7 +203,7 @@ mod test_all_connected_pins {
     fn single_pin() {
         let pin = Pin::new();
         let outputs = vec![pin.clone()];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         let mut expected = HashSet::new();
         expected.insert(pin);
         assert_eq!(result, expected);
@@ -217,7 +215,7 @@ mod test_all_connected_pins {
         let pin_b = Pin::new();
         pin_b.feed_from(pin_a.clone());
         let outputs = vec![pin_b.clone()];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         let mut expected = HashSet::new();
         expected.insert(pin_a);
         expected.insert(pin_b);
@@ -237,7 +235,7 @@ mod test_all_connected_pins {
             pin = next_pin;
         }
         let outputs = vec![first_pin];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         assert_eq!(result, expected);
     }
 
@@ -249,7 +247,7 @@ mod test_all_connected_pins {
         expected.insert(nand.inputs[0].clone());
         expected.insert(nand.inputs[1].clone());
         let outputs = vec![nand.output];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         assert_eq!(result, expected);
     }
 
@@ -262,7 +260,7 @@ mod test_all_connected_pins {
         nand_a.inputs[0].feed_from(nand_b.output.clone());
         nand_a.inputs[1].feed_from(nand_c.output.clone());
         let outputs = vec![nand_a.output.clone()];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         for nand in [nand_a, nand_b, nand_c] {
             expected.insert(nand.output.clone());
             expected.insert(nand.inputs[0].clone());
@@ -288,7 +286,7 @@ mod test_all_connected_pins {
             expected.insert(nand.inputs[1].clone());
         }
         let outputs = vec![nands[0].output.clone(), nands[2].output.clone()];
-        let result = get_all_connected_pins(outputs);
+        let result = get_all_connected_pins(&outputs);
         assert_eq!(result, expected);
     }
 }

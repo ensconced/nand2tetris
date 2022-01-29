@@ -5,9 +5,9 @@ mod pin;
 mod sequential_logic;
 mod test_utils;
 
-use crate::ordering::{get_all_connected_pins, sort_and_compute};
+use crate::ordering::{get_all_connected_pins, reverse_topological_sort, sort_and_compute};
 use crate::pin::{Connection, Pin};
-use crate::sequential_logic::Ram512;
+use crate::sequential_logic::{Ram16k, Ram4k, Ram512};
 use crate::test_utils::i16_to_bools;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -75,7 +75,7 @@ fn test_get_all_pin_links() {
     pin_b.nand_connect(pin_c.clone(), pin_d.clone());
     pin_d.flipflop_connect(pin_e.clone());
 
-    let all_pins = get_all_connected_pins([pin_a.clone()].to_vec());
+    let all_pins = get_all_connected_pins(&[pin_a.clone()].to_vec());
     let pin_links = get_all_pin_links(&all_pins);
     let mut expected = HashMap::new();
     let eq = Connection::Eq(pin_b.clone());
@@ -121,8 +121,9 @@ fn test_get_all_pin_links() {
 
 fn main() {
     println!("creating ram");
-    let ram = Ram512::new();
-    let all_pins = get_all_connected_pins(ram.output.pins.to_vec());
+    let ram = Ram16k::new();
+    let output_pins = ram.output.pins.to_vec();
+    let all_pins = get_all_connected_pins(&output_pins);
     let pin_links = get_all_pin_links(&all_pins);
     let useless_pin_count = pin_links
         .iter()
@@ -137,15 +138,22 @@ fn main() {
 
     ram.input.set_values(i16_to_bools(1234));
     ram.load.value.set(true);
-    let address = [false; 9];
+    let address = [false; 14];
     for i in 0..address.len() {
         ram.address[i].value.set(address[i]);
     }
+    println!("sorting");
+    let sorted_pins = reverse_topological_sort(&all_pins);
     println!("computing");
-    sort_and_compute(&ram.output.pins, &all_pins);
+    for pin in sorted_pins.iter() {
+        pin.compute();
+    }
     println!("ticking");
     ram.tick();
     println!("computing");
-    let result = sort_and_compute(&ram.output.pins, &all_pins);
+    for pin in sorted_pins {
+        pin.compute();
+    }
+    let result: Vec<bool> = output_pins.iter().map(|pin| pin.value.get()).collect();
     println!("{:?}", result);
 }

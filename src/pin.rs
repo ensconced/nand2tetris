@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-thread_local!(static PIN_COUNT: Cell<usize> = Cell::new(0));
+thread_local!(static PIN_COUNT: Cell<u32> = Cell::new(0));
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Connection {
@@ -29,7 +29,7 @@ impl Connection {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pin {
-    debug_id: usize,
+    debug_id: u32,
     pub value: Cell<bool>,
     pub connection: RefCell<Option<Connection>>,
 }
