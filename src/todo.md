@@ -7,6 +7,24 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 
 performance ideas
 
+- use one representation for pins/connections for building the graph, but a
+  different, more optimized one, for actually running
+
+  // could also try using u32s here instead...not sure how that will affect things...
+  enum OptimizedConnection {
+  Eq(usize),
+  Nand(usize, usize),
+  }
+
+  OptimizedPin {
+  connection: Option<OptimizedConnection>
+  value: Cell<bool>
+  }
+
+  type OptimizedFlipFlop = [usize, usize]
+
+  let flipflops: Vec<OptimizedFlipFlop> = ...
+
 - profiling!
 - only do sorting once - not every time in sort_and_compute (although a function
   that does it all will probably we handy for making tests less verbose)
