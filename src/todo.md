@@ -8,7 +8,11 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 performance ideas
 
 - profiling!
+- count useless pins
 - compress long eq chains
+- convert graph from linked-list style to more data-oriented format before
+  computation - vec of raw Pins without Rc? - connections are only necessary for
+  flipflops and can use indices instead of refs
 
 refactoring ideas
 

@@ -2,12 +2,14 @@ use crate::pin::{Connection, Pin};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-pub fn compute_all(output_pins: &[Rc<Pin>]) -> Vec<bool> {
-    println!("finding connected pins");
-    let connected_pins = all_connected_pins(output_pins.to_vec());
-    println!("found {} connected pins", connected_pins.len());
+// output_pins: &[Rc<Pin>]
+// println!("finding connected pins");
+// let connected_pins = all_connected_pins(output_pins.to_vec());
+// println!("found {} connected pins", all_pins.len());
+
+pub fn compute_all(output_pins: &[Rc<Pin>], all_pins: &HashSet<Rc<Pin>>) -> Vec<bool> {
     println!("sorting pins");
-    let sorted_pins = reverse_topological_sort(connected_pins);
+    let sorted_pins = reverse_topological_sort(all_pins);
     for (idx, pin) in sorted_pins.iter().enumerate() {
         println!("computing pin {} of {}", idx, sorted_pins.len());
         pin.compute();
@@ -15,7 +17,7 @@ pub fn compute_all(output_pins: &[Rc<Pin>]) -> Vec<bool> {
     output_pins.iter().map(|pin| pin.value.get()).collect()
 }
 
-fn reverse_topological_sort(all_pins: HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
+fn reverse_topological_sort(all_pins: &HashSet<Rc<Pin>>) -> Vec<Rc<Pin>> {
     let mut done = HashSet::new();
     let mut doing = HashSet::new();
     let mut all_pins_iter = all_pins.into_iter();
@@ -101,7 +103,7 @@ mod test_reverse_topological_sort {
     #[test]
     fn empty_set() {
         let pins = HashSet::new();
-        let sorted = reverse_topological_sort(pins);
+        let sorted = reverse_topological_sort(&pins);
         assert_eq!(sorted, Vec::new());
     }
 
@@ -110,7 +112,7 @@ mod test_reverse_topological_sort {
         let mut pins = HashSet::new();
         let pin = Pin::new();
         pins.insert(pin.clone());
-        let sorted = reverse_topological_sort(pins);
+        let sorted = reverse_topological_sort(&pins);
         assert_eq!(sorted, vec![pin]);
     }
 
@@ -119,7 +121,7 @@ mod test_reverse_topological_sort {
         let pin_a = Pin::new();
         let pin_b = Pin::new();
         pin_a.feed_from(pin_b.clone());
-        let sorted = reverse_topological_sort(all_connected_pins(vec![pin_a.clone()]));
+        let sorted = reverse_topological_sort(&all_connected_pins(vec![pin_a.clone()]));
         assert_eq!(sorted, vec![pin_b, pin_a]);
     }
 
@@ -132,7 +134,7 @@ mod test_reverse_topological_sort {
             current_pin.feed_from(pin.clone());
             current_pin = pin;
         }
-        let sorted = reverse_topological_sort(all_connected_pins(vec![output_pin]));
+        let sorted = reverse_topological_sort(&all_connected_pins(vec![output_pin]));
         assert_eq!(sorted.len(), 11);
         assert!(pins_are_in_order(sorted));
     }
@@ -140,7 +142,7 @@ mod test_reverse_topological_sort {
     #[test]
     fn single_nand() {
         let nand = TwoInOneOutGate::nand();
-        let sorted = reverse_topological_sort(all_connected_pins(vec![nand.output]));
+        let sorted = reverse_topological_sort(&all_connected_pins(vec![nand.output]));
         assert_eq!(sorted.len(), 3);
         assert!(pins_are_in_order(sorted));
     }
@@ -148,7 +150,7 @@ mod test_reverse_topological_sort {
     #[test]
     fn single_xor() {
         let xor = TwoInOneOutGate::xor();
-        let sorted = reverse_topological_sort(all_connected_pins(vec![xor.output]));
+        let sorted = reverse_topological_sort(&all_connected_pins(vec![xor.output]));
         // xor consists of 4 nands plus its own two input and single output pins
         assert_eq!(sorted.len(), 15);
         assert!(pins_are_in_order(sorted));
@@ -157,19 +159,19 @@ mod test_reverse_topological_sort {
     #[test]
     fn full_adder() {
         let full_adder = FullAdder::new();
-        let sorted = reverse_topological_sort(all_connected_pins(full_adder.outputs.to_vec()));
+        let sorted = reverse_topological_sort(&all_connected_pins(full_adder.outputs.to_vec()));
         assert!(pins_are_in_order(sorted));
     }
 
     #[test]
     fn add16() {
         let add16 = Add16::new();
-        let sorted = reverse_topological_sort(all_connected_pins(add16.output.pins.to_vec()));
+        let sorted = reverse_topological_sort(&all_connected_pins(add16.output.pins.to_vec()));
         assert!(pins_are_in_order(sorted));
     }
 }
 
-fn all_connected_pins(outputs: Vec<Rc<Pin>>) -> HashSet<Rc<Pin>> {
+pub fn all_connected_pins(outputs: Vec<Rc<Pin>>) -> HashSet<Rc<Pin>> {
     fn add_connected_pins(pin: Rc<Pin>, all_connected: &mut HashSet<Rc<Pin>>) {
         if all_connected.contains(&pin) {
             return;

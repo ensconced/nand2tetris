@@ -1,5 +1,5 @@
 use crate::boolean_logic::{Mux16, Not16, NotGate, Or8Way, TwoInOneOut16, TwoInOneOutGate};
-use crate::ordering::compute_all;
+use crate::ordering::{all_connected_pins, compute_all};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::{bools_to_usize, i16_to_bools, last_2, last_3, u8_to_bools};
 use std::num::Wrapping;
@@ -42,12 +42,13 @@ fn test_half_adder() {
     ];
 
     let half_adder = HalfAdder::new();
+    let pins = all_connected_pins(half_adder.outputs.to_vec());
     for test_case in test_cases {
         let [inputs, expected_outputs] = test_case;
         for i in 0..=1 {
             half_adder.inputs[i].value.set(inputs[i]);
         }
-        let result = compute_all(&half_adder.outputs);
+        let result = compute_all(&half_adder.outputs, &pins);
         assert_eq!(result[0..2], expected_outputs);
     }
 }
@@ -89,11 +90,12 @@ impl FullAdder {
 fn test_full_adder() {
     for i in 0..8 {
         let full_adder = FullAdder::new();
+        let pins = all_connected_pins(full_adder.outputs.to_vec());
         let inputs = last_3(u8_to_bools(i as u8));
         for i in 0..3 {
             full_adder.inputs[i].value.set(inputs[i]);
         }
-        let result = compute_all(&full_adder.outputs);
+        let result = compute_all(&full_adder.outputs, &pins);
         let expected_output = last_2(u8_to_bools(i32::count_ones(i) as u8));
         assert_eq!(result[0..2], expected_output);
     }
@@ -133,13 +135,14 @@ impl Add16 {
 fn test_add16() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let add16 = Add16::new();
+    let pins = all_connected_pins(add16.output.pins.to_vec());
     for i in test_cases {
         for j in test_cases {
             let input_a = i16_to_bools(i);
             let input_b = i16_to_bools(j);
             add16.inputs[0].set_values(input_a);
             add16.inputs[1].set_values(input_b);
-            let result = compute_all(&add16.output.pins);
+            let result = compute_all(&add16.output.pins, &pins);
             let expected_num = (Wrapping(i) + Wrapping(j)).0;
             assert_eq!(result[0..16], i16_to_bools(expected_num));
         }
@@ -172,10 +175,11 @@ impl Inc16 {
 fn test_inc16() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let inc16 = Inc16::new();
+    let pins = all_connected_pins(inc16.output.pins.to_vec());
     for i in test_cases {
         for _ in test_cases {
             inc16.input.set_values(i16_to_bools(i));
-            let result = compute_all(&inc16.output.pins);
+            let result = compute_all(&inc16.output.pins, &pins);
             let expected_num = (Wrapping(i) + Wrapping(1)).0;
             assert_eq!(result[0..16], i16_to_bools(expected_num));
         }
@@ -213,9 +217,11 @@ impl IsNonZero16 {
 fn test_is_non_zero() {
     let test_cases = [0, 1, 1234, -1234, i16::MAX, i16::MIN];
     let is_non_zero = IsNonZero16::new();
+    let pins = all_connected_pins(vec![is_non_zero.output.clone()]);
     for i in test_cases {
         is_non_zero.input.set_values(i16_to_bools(i));
-        let result = compute_all(&[is_non_zero.output.clone()]);
+        let output_pins = [is_non_zero.output.clone()];
+        let result = compute_all(&output_pins, &pins);
         let expected = i != 0;
         assert_eq!(result[0], expected);
     }
@@ -294,13 +300,6 @@ impl ALU {
 
         result
     }
-
-    fn compute(&self) {
-        let mut all_output_pins = self.output.pins.to_vec();
-        all_output_pins.push(self.output_is_zero.clone());
-        all_output_pins.push(self.output_is_negative.clone());
-        compute_all(&all_output_pins);
-    }
 }
 
 #[cfg(test)]
@@ -317,6 +316,11 @@ mod test {
         not_inputs: [bool; 2],
         f: fn(Wrapping<i16>, Wrapping<i16>) -> Wrapping<i16>,
     ) {
+        let mut output_pins = alu.output.pins.to_vec();
+        output_pins.push(alu.output_is_zero.clone());
+        output_pins.push(alu.output_is_negative.clone());
+        let all_pins = all_connected_pins(output_pins.to_vec());
+
         alu.use_add.value.set(use_add);
         alu.not_output.value.set(not_output);
         for test_num_a in test_nums {
@@ -327,7 +331,8 @@ mod test {
                     alu.zero_inputs[i].value.set(zero_inputs[i]);
                     alu.not_inputs[i].value.set(not_inputs[i]);
                 }
-                alu.compute();
+
+                compute_all(&output_pins, &all_pins);
                 let expected_result = f(Wrapping(test_num_a), Wrapping(test_num_b));
                 assert_eq!(alu.output.get_values(), i16_to_bools(expected_result.0));
                 assert_eq!(alu.output_is_zero.value.get(), expected_result.0 == 0);

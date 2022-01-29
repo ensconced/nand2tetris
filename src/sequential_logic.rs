@@ -1,6 +1,6 @@
 use crate::boolean_arithmetic::Add16;
 use crate::boolean_logic::{DMux4Way, DMux8Way, Mux, Mux16, Mux4Way16, Mux8Way16, TwoInOneOutGate};
-use crate::ordering::compute_all;
+use crate::ordering::{all_connected_pins, compute_all};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::i16_to_bools;
 use std::rc::Rc;
@@ -44,17 +44,20 @@ fn test_flip_flop_pair() {
     let flipflop_a = FlipFlop::new();
     let flipflop_b = FlipFlop::new();
     flipflop_b.input.feed_from(flipflop_a.output.clone());
+
+    let all_pins = all_connected_pins(vec![flipflop_b.output.clone()]);
+
     flipflop_a.input.value.set(true);
     assert_eq!(flipflop_a.output.value.get(), false);
     assert_eq!(flipflop_b.output.value.get(), false);
     flipflop_a.tick();
     flipflop_b.tick();
-    compute_all(&[flipflop_b.output.clone()]);
+    compute_all(&[flipflop_b.output.clone()], &all_pins);
     assert_eq!(flipflop_a.output.value.get(), true);
     assert_eq!(flipflop_b.output.value.get(), false);
     flipflop_a.tick();
     flipflop_b.tick();
-    compute_all(&[flipflop_b.output.clone()]);
+    compute_all(&[flipflop_b.output.clone()], &all_pins);
     assert_eq!(flipflop_a.output.value.get(), true);
     assert_eq!(flipflop_b.output.value.get(), true);
 }
@@ -69,6 +72,9 @@ fn test_flipflop_chain() {
         }
         flip_flops.push(flip_flop);
     }
+
+    let all_pins = all_connected_pins(vec![flip_flops[9].output.clone()]);
+
     flip_flops[0].input.value.set(true);
 
     let compute = || {
@@ -77,7 +83,7 @@ fn test_flipflop_chain() {
                 flip_flop.tick();
             }
         }
-        compute_all(&[flip_flops[9].output.clone()]);
+        compute_all(&[flip_flops[9].output.clone()], &all_pins);
     };
 
     for step in 0..10 {
@@ -123,6 +129,7 @@ impl BitRegister {
 #[test]
 fn test_bit_register() {
     let bit = BitRegister::new();
+    let all_pins = all_connected_pins(vec![bit.output.clone()]);
 
     // is properly initialised
     assert_eq!(bit.input.value.get(), false);
@@ -133,17 +140,17 @@ fn test_bit_register() {
     // change the output
     bit.input.value.set(true);
     bit.tick();
-    let output_val = compute_all(&[bit.output.clone()])[0];
+    let output_val = compute_all(&[bit.output.clone()], &all_pins)[0];
     assert_eq!(output_val, false);
 
     // setting the load bit doesn't change the output value until you tick
     bit.load.value.set(true);
-    let output_val = compute_all(&[bit.output.clone()])[0];
+    let output_val = compute_all(&[bit.output.clone()], &all_pins)[0];
     assert_eq!(output_val, false);
 
     // when you do tick, the output value does change...
     bit.tick();
-    let output_val = compute_all(&[bit.output])[0];
+    let output_val = compute_all(&[bit.output], &all_pins)[0];
     assert_eq!(output_val, true);
 }
 
@@ -184,34 +191,36 @@ impl Register {
 fn test_register() {
     let test_nums = [0, 1, 1234, i16::MIN, i16::MAX / 2, i16::MAX];
     let register = Register::new();
+    let all_pins = all_connected_pins(register.output.pins.to_vec());
+
     for test_num in test_nums {
         let num_as_bools = i16_to_bools(test_num);
         register.load.value.set(true);
         register.input.set_values(num_as_bools);
-        compute_all(&register.output.pins);
+        compute_all(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins);
+        let result = compute_all(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
-        compute_all(&register.output.pins);
+        compute_all(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins);
+        let result = compute_all(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
         register.load.value.set(false);
         register.input.set_values([false; 16]);
-        compute_all(&register.output.pins);
+        compute_all(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins);
+        let result = compute_all(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
         register.load.value.set(true);
-        let result = compute_all(&register.output.pins);
+        let result = compute_all(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
-        compute_all(&register.output.pins);
+        compute_all(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins);
+        let result = compute_all(&register.output.pins, &all_pins);
         assert_eq!(result, [false; 16]);
     }
 }
@@ -269,6 +278,7 @@ impl Ram8 {
 #[test]
 fn test_ram8() {
     let ram = Ram8::new();
+    let all_pins = all_connected_pins(ram.output.pins.to_vec());
 
     let val_a = i16_to_bools(1234);
     let addr_a = [false, false, true];
@@ -278,11 +288,11 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_a[i]);
     }
-    compute_all(&ram.output.pins);
+    compute_all(&ram.output.pins, &all_pins);
     ram.tick();
 
     // retrieve value from output
-    let output = compute_all(&ram.output.pins);
+    let output = compute_all(&ram.output.pins, &all_pins);
     assert_eq!(output, val_a);
 
     // store another value at a different address
@@ -292,9 +302,9 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_b[i]);
     }
-    compute_all(&ram.output.pins);
+    compute_all(&ram.output.pins, &all_pins);
     ram.tick();
-    let result = compute_all(&ram.output.pins);
+    let result = compute_all(&ram.output.pins, &all_pins);
     assert_eq!(result, val_b);
 
     // check that original value is still present
@@ -302,9 +312,9 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_a[i]);
     }
-    compute_all(&ram.output.pins);
+    compute_all(&ram.output.pins, &all_pins);
     ram.tick();
-    let result = compute_all(&ram.output.pins);
+    let result = compute_all(&ram.output.pins, &all_pins);
     assert_eq!(result, val_a);
 }
 
@@ -371,6 +381,7 @@ impl Ram64 {
 #[test]
 fn test_ram_64() {
     let ram = Ram64::new();
+    let all_pins = all_connected_pins(ram.output.pins.to_vec());
 
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram8
@@ -388,7 +399,7 @@ fn test_ram_64() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -399,9 +410,9 @@ fn test_ram_64() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins);
+        let result = compute_all(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -465,6 +476,7 @@ impl Ram512 {
 #[test]
 fn test_ram_512() {
     let ram = Ram512::new();
+    let all_pins = all_connected_pins(ram.output.pins.to_vec());
 
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram64
@@ -482,7 +494,7 @@ fn test_ram_512() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -493,9 +505,9 @@ fn test_ram_512() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins);
+        let result = compute_all(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -560,6 +572,8 @@ impl Ram4k {
 #[test]
 fn test_ram_4k() {
     let ram = Ram4k::new();
+    let all_pins = all_connected_pins(ram.output.pins.to_vec());
+
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram512
     let addrs = [
@@ -582,7 +596,7 @@ fn test_ram_4k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -593,9 +607,9 @@ fn test_ram_4k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins);
+        let result = compute_all(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -659,6 +673,7 @@ impl Ram16k {
 #[test]
 fn test_ram_16k() {
     let ram = Ram16k::new();
+    let all_pins = all_connected_pins(ram.output.pins.to_vec());
     let nums = [1234, 5678, -1234];
     // NB the first two addrs will be within the same Ram4k
     let addrs = [
@@ -684,7 +699,7 @@ fn test_ram_16k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -695,9 +710,9 @@ fn test_ram_16k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins);
+        compute_all(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins);
+        let result = compute_all(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -766,37 +781,69 @@ impl Counter {
 #[test]
 fn test_counter() {
     let counter = Counter::new();
+    let all_pins = all_connected_pins(counter.output.pins.to_vec());
+
     counter.load.value.set(true);
     counter.input.set_values(i16_to_bools(47));
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(47));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(47)
+    );
     counter.load.value.set(false);
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(47));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(47)
+    );
     counter.reset.value.set(true);
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(0));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(0)
+    );
     counter.reset.value.set(false);
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(0));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(0)
+    );
     counter.inc.value.set(true);
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(1));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(1)
+    );
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(2));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(2)
+    );
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(3));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(3)
+    );
     counter.inc.value.set(false);
-    compute_all(&counter.output.pins);
+    compute_all(&counter.output.pins, &all_pins);
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(3));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(3)
+    );
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(3));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(3)
+    );
     counter.tick();
-    assert_eq!(compute_all(&counter.output.pins), i16_to_bools(3));
+    assert_eq!(
+        compute_all(&counter.output.pins, &all_pins),
+        i16_to_bools(3)
+    );
 }
