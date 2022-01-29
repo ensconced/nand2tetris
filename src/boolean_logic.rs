@@ -1,4 +1,4 @@
-use crate::ordering::{compute_all, get_all_connected_pins};
+use crate::ordering::{get_all_connected_pins, sort_and_compute};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::{bools_to_usize, i16_to_bools, u8_to_bools};
 use std::cell::{Cell, RefCell};
@@ -14,7 +14,7 @@ fn exhaustively_test_two_in_one_out(gate: TwoInOneOutGate, f: fn(bool, bool) -> 
     for input in all_inputs {
         gate.inputs[0].value.set(input[0]);
         gate.inputs[1].value.set(input[1]);
-        let result = compute_all(&[gate.output.clone()], &pins);
+        let result = sort_and_compute(&[gate.output.clone()], &pins);
         assert_eq!(result[0], f(input[0], input[1]));
     }
 }
@@ -35,7 +35,7 @@ fn exhaustively_test_three_in_one_out(gate: Mux, f: fn(bool, bool, bool) -> bool
         gate.input_a.value.set(input[0]);
         gate.input_b.value.set(input[1]);
         gate.sel.value.set(input[2]);
-        let result = compute_all(&[gate.output.clone()], &all_pins);
+        let result = sort_and_compute(&[gate.output.clone()], &all_pins);
         assert_eq!(result[0], f(input[0], input[1], input[2]));
     }
 }
@@ -46,7 +46,7 @@ fn exhaustively_test_two_in_two_out(gate: DMux, f: fn(bool, bool) -> [bool; 2]) 
     for input in all_inputs {
         gate.input.value.set(input[0]);
         gate.sel.value.set(input[1]);
-        let result = compute_all(&[gate.output_a.clone(), gate.output_b.clone()], &all_pins);
+        let result = sort_and_compute(&[gate.output_a.clone(), gate.output_b.clone()], &all_pins);
         let expected = f(input[0], input[1]);
         assert_eq!(result, expected);
     }
@@ -177,10 +177,10 @@ fn test_not_gate() {
     let not_gate = NotGate::new();
     let all_pins = get_all_connected_pins(vec![not_gate.output.clone()]);
     not_gate.input.value.set(true);
-    let result = compute_all(&[not_gate.output.clone()], &all_pins);
+    let result = sort_and_compute(&[not_gate.output.clone()], &all_pins);
     assert_eq!(result[0], false);
     not_gate.input.value.set(false);
-    let result = compute_all(&[not_gate.output], &all_pins);
+    let result = sort_and_compute(&[not_gate.output], &all_pins);
     assert_eq!(result[0], true);
 }
 
@@ -303,7 +303,7 @@ fn test_not16() {
         let not16 = Not16::new();
         let all_pins = get_all_connected_pins(not16.output.pins.to_vec());
         not16.input.set_values(i16_to_bools(num));
-        let result = compute_all(&not16.output.pins, &all_pins);
+        let result = sort_and_compute(&not16.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(!num));
     }
 }
@@ -351,7 +351,7 @@ fn test_and16() {
             let test_input_b = i16_to_bools(num_b);
             and16.inputs[0].set_values(test_input_a);
             and16.inputs[1].set_values(test_input_b);
-            let result = compute_all(&and16.output.pins, &all_pins);
+            let result = sort_and_compute(&and16.output.pins, &all_pins);
             let expected = i16_to_bools(num_a & num_b);
             assert_eq!(result, expected);
         }
@@ -368,7 +368,7 @@ fn test_or16() {
             let test_input_b = i16_to_bools(num_b);
             or16.inputs[0].set_values(test_input_a);
             or16.inputs[1].set_values(test_input_b);
-            let result = compute_all(&or16.output.pins, &all_pins);
+            let result = sort_and_compute(&or16.output.pins, &all_pins);
             let expected = i16_to_bools(num_a | num_b);
             assert_eq!(result, expected);
         }
@@ -417,7 +417,7 @@ fn test_mux16() {
                 mux16.inputs[0].set_values(test_input_a);
                 mux16.inputs[1].set_values(test_input_b);
                 mux16.sel.value.set(sel);
-                let result = compute_all(&mux16.output.pins, &all_pins);
+                let result = sort_and_compute(&mux16.output.pins, &all_pins);
                 let expected = if sel { test_input_b } else { test_input_a };
                 assert_eq!(result, expected);
             }
@@ -480,7 +480,7 @@ fn test_or8way() {
         for i in 0..8 {
             or8way.input[i].value.set(test_input[i]);
         }
-        let result = compute_all(&[or8way.output.clone()], &all_pins);
+        let result = sort_and_compute(&[or8way.output.clone()], &all_pins);
         assert_eq!(result[0], num != 0);
     }
 }
@@ -530,10 +530,10 @@ fn test_or_n_way_16() {
     for pin_array in funnel.inputs.iter() {
         pin_array.set_values([false; 16]);
     }
-    let result = compute_all(&funnel.output.pins, &all_pins);
+    let result = sort_and_compute(&funnel.output.pins, &all_pins);
     assert_eq!(result, [false; 16]);
     funnel.inputs[5].set_values(i16_to_bools(123));
-    let result = compute_all(&funnel.output.pins, &all_pins);
+    let result = sort_and_compute(&funnel.output.pins, &all_pins);
     assert_eq!(result, i16_to_bools(123));
 }
 
@@ -644,7 +644,7 @@ fn test_mux4way16() {
             for i in 0..=1 {
                 mux.sel[i].value.set(sel[i]);
             }
-            let result = compute_all(&mux.output.pins, &all_pins);
+            let result = sort_and_compute(&mux.output.pins, &all_pins);
             let expected = if sel[0] {
                 if sel[1] {
                     i16_to_bools(num_d)
@@ -736,7 +736,7 @@ fn test_mux8way16() {
             for i in 0..=2 {
                 mux.sel[i].value.set(sel[i]);
             }
-            let result = compute_all(&mux.output.pins, &all_pins);
+            let result = sort_and_compute(&mux.output.pins, &all_pins);
             let expected = i16_to_bools(test_case[bools_to_usize(&sel)]);
             assert_eq!(result, expected);
         }
@@ -783,7 +783,7 @@ fn test_dmux_4_way() {
             dmux.sel[0].value.set(sel_pin_idx & 2 == 2);
             dmux.sel[1].value.set(sel_pin_idx & 1 == 1);
             for (pin_idx, output) in dmux.outputs.iter().enumerate() {
-                let result = compute_all(&[output.clone()], &all_pins);
+                let result = sort_and_compute(&[output.clone()], &all_pins);
                 assert_eq!(result[0], val && pin_idx == sel_pin_idx)
             }
         }
@@ -841,7 +841,7 @@ fn test_dmux_8_way() {
             dmux.sel[1].value.set(sel_pin_idx & 2 == 2);
             dmux.sel[2].value.set(sel_pin_idx & 1 == 1);
             for (pin_idx, output) in dmux.outputs.iter().enumerate() {
-                let result = compute_all(&[output.clone()], &all_pins);
+                let result = sort_and_compute(&[output.clone()], &all_pins);
                 assert_eq!(result[0], val && pin_idx == sel_pin_idx)
             }
         }

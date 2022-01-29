@@ -8,14 +8,15 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 performance ideas
 
 - profiling!
-- count useless pins
-- compress long eq chains
+- on tick, only compute downstream from changed pins?
+- remove useless pins (i.e. compress long chains)
 - convert graph from linked-list style to more data-oriented format before
   computation - vec of raw Pins without Rc? - connections are only necessary for
   flipflops and can use indices instead of refs
 
 refactoring ideas
 
+- DRY up ram code
 - use macros for generating similar gates with diff number of inputs etc
 - cargo clippy and address issues
 

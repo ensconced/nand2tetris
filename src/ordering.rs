@@ -2,7 +2,7 @@ use crate::pin::{Connection, Pin};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-pub fn compute_all(output_pins: &[Rc<Pin>], all_pins: &HashSet<Rc<Pin>>) -> Vec<bool> {
+pub fn sort_and_compute(output_pins: &[Rc<Pin>], all_pins: &HashSet<Rc<Pin>>) -> Vec<bool> {
     println!("sorting pins");
     let sorted_pins = reverse_topological_sort(all_pins);
     println!("computing pins");

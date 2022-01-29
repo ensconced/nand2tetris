@@ -1,6 +1,6 @@
 use crate::boolean_arithmetic::Add16;
 use crate::boolean_logic::{DMux4Way, DMux8Way, Mux, Mux16, Mux4Way16, Mux8Way16, TwoInOneOutGate};
-use crate::ordering::{compute_all, get_all_connected_pins};
+use crate::ordering::{get_all_connected_pins, sort_and_compute};
 use crate::pin::{Pin, PinArray16};
 use crate::test_utils::i16_to_bools;
 use std::rc::Rc;
@@ -52,12 +52,12 @@ fn test_flip_flop_pair() {
     assert_eq!(flipflop_b.output.value.get(), false);
     flipflop_a.tick();
     flipflop_b.tick();
-    compute_all(&[flipflop_b.output.clone()], &all_pins);
+    sort_and_compute(&[flipflop_b.output.clone()], &all_pins);
     assert_eq!(flipflop_a.output.value.get(), true);
     assert_eq!(flipflop_b.output.value.get(), false);
     flipflop_a.tick();
     flipflop_b.tick();
-    compute_all(&[flipflop_b.output.clone()], &all_pins);
+    sort_and_compute(&[flipflop_b.output.clone()], &all_pins);
     assert_eq!(flipflop_a.output.value.get(), true);
     assert_eq!(flipflop_b.output.value.get(), true);
 }
@@ -83,7 +83,7 @@ fn test_flipflop_chain() {
                 flip_flop.tick();
             }
         }
-        compute_all(&[flip_flops[9].output.clone()], &all_pins);
+        sort_and_compute(&[flip_flops[9].output.clone()], &all_pins);
     };
 
     for step in 0..10 {
@@ -140,17 +140,17 @@ fn test_bit_register() {
     // change the output
     bit.input.value.set(true);
     bit.tick();
-    let output_val = compute_all(&[bit.output.clone()], &all_pins)[0];
+    let output_val = sort_and_compute(&[bit.output.clone()], &all_pins)[0];
     assert_eq!(output_val, false);
 
     // setting the load bit doesn't change the output value until you tick
     bit.load.value.set(true);
-    let output_val = compute_all(&[bit.output.clone()], &all_pins)[0];
+    let output_val = sort_and_compute(&[bit.output.clone()], &all_pins)[0];
     assert_eq!(output_val, false);
 
     // when you do tick, the output value does change...
     bit.tick();
-    let output_val = compute_all(&[bit.output], &all_pins)[0];
+    let output_val = sort_and_compute(&[bit.output], &all_pins)[0];
     assert_eq!(output_val, true);
 }
 
@@ -197,30 +197,30 @@ fn test_register() {
         let num_as_bools = i16_to_bools(test_num);
         register.load.value.set(true);
         register.input.set_values(num_as_bools);
-        compute_all(&register.output.pins, &all_pins);
+        sort_and_compute(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins, &all_pins);
+        let result = sort_and_compute(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
-        compute_all(&register.output.pins, &all_pins);
+        sort_and_compute(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins, &all_pins);
+        let result = sort_and_compute(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
         register.load.value.set(false);
         register.input.set_values([false; 16]);
-        compute_all(&register.output.pins, &all_pins);
+        sort_and_compute(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins, &all_pins);
+        let result = sort_and_compute(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
         register.load.value.set(true);
-        let result = compute_all(&register.output.pins, &all_pins);
+        let result = sort_and_compute(&register.output.pins, &all_pins);
         assert_eq!(result, num_as_bools);
 
-        compute_all(&register.output.pins, &all_pins);
+        sort_and_compute(&register.output.pins, &all_pins);
         register.tick();
-        let result = compute_all(&register.output.pins, &all_pins);
+        let result = sort_and_compute(&register.output.pins, &all_pins);
         assert_eq!(result, [false; 16]);
     }
 }
@@ -288,11 +288,11 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_a[i]);
     }
-    compute_all(&ram.output.pins, &all_pins);
+    sort_and_compute(&ram.output.pins, &all_pins);
     ram.tick();
 
     // retrieve value from output
-    let output = compute_all(&ram.output.pins, &all_pins);
+    let output = sort_and_compute(&ram.output.pins, &all_pins);
     assert_eq!(output, val_a);
 
     // store another value at a different address
@@ -302,9 +302,9 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_b[i]);
     }
-    compute_all(&ram.output.pins, &all_pins);
+    sort_and_compute(&ram.output.pins, &all_pins);
     ram.tick();
-    let result = compute_all(&ram.output.pins, &all_pins);
+    let result = sort_and_compute(&ram.output.pins, &all_pins);
     assert_eq!(result, val_b);
 
     // check that original value is still present
@@ -312,9 +312,9 @@ fn test_ram8() {
     for i in 0..3 {
         ram.address[i].value.set(addr_a[i]);
     }
-    compute_all(&ram.output.pins, &all_pins);
+    sort_and_compute(&ram.output.pins, &all_pins);
     ram.tick();
-    let result = compute_all(&ram.output.pins, &all_pins);
+    let result = sort_and_compute(&ram.output.pins, &all_pins);
     assert_eq!(result, val_a);
 }
 
@@ -399,7 +399,7 @@ fn test_ram_64() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -410,9 +410,9 @@ fn test_ram_64() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins, &all_pins);
+        let result = sort_and_compute(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -494,7 +494,7 @@ fn test_ram_512() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -505,9 +505,9 @@ fn test_ram_512() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins, &all_pins);
+        let result = sort_and_compute(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -596,7 +596,7 @@ fn test_ram_4k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -607,9 +607,9 @@ fn test_ram_4k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins, &all_pins);
+        let result = sort_and_compute(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -699,7 +699,7 @@ fn test_ram_16k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
     }
 
@@ -710,9 +710,9 @@ fn test_ram_16k() {
         for (pin_idx, pin_val) in addr.iter().enumerate() {
             ram.address[pin_idx].value.set(*pin_val);
         }
-        compute_all(&ram.output.pins, &all_pins);
+        sort_and_compute(&ram.output.pins, &all_pins);
         ram.tick();
-        let result = compute_all(&ram.output.pins, &all_pins);
+        let result = sort_and_compute(&ram.output.pins, &all_pins);
         assert_eq!(result, i16_to_bools(num));
     }
 }
@@ -785,65 +785,65 @@ fn test_counter() {
 
     counter.load.value.set(true);
     counter.input.set_values(i16_to_bools(47));
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(47)
     );
     counter.load.value.set(false);
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(47)
     );
     counter.reset.value.set(true);
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(0)
     );
     counter.reset.value.set(false);
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(0)
     );
     counter.inc.value.set(true);
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(1)
     );
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(2)
     );
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(3)
     );
     counter.inc.value.set(false);
-    compute_all(&counter.output.pins, &all_pins);
+    sort_and_compute(&counter.output.pins, &all_pins);
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(3)
     );
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(3)
     );
     counter.tick();
     assert_eq!(
-        compute_all(&counter.output.pins, &all_pins),
+        sort_and_compute(&counter.output.pins, &all_pins),
         i16_to_bools(3)
     );
 }
