@@ -5,15 +5,17 @@ mod pin;
 mod sequential_logic;
 mod test_utils;
 
+use crate::boolean_arithmetic::ALU;
 use crate::ordering::{get_all_connected_pins, reverse_topological_sort, sort_and_compute};
 use crate::pin::{
     Connection, OptimizedConnection, OptimizedFlipFlop, OptimizedPin, OptimizedPinCollection, Pin,
 };
-use crate::sequential_logic::{Ram16k, Ram4k, Ram512};
+use crate::sequential_logic::{Ram16k, Ram4k, Ram512, Ram8, Register};
 use crate::test_utils::i16_to_bools;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::time::Instant;
 
 #[derive(Debug, PartialEq)]
 struct PinLinks {
@@ -184,11 +186,22 @@ fn optimize(pins: Vec<Rc<Pin>>) -> OptimizedPinCollection {
 }
 
 fn main() {
-    println!("creating ram");
-    let ram = Ram4k::new();
-    let output_pins = ram.output.pins.to_vec();
+    println!("creating alu");
+    let alu = ALU::new();
+
+    let mut output_pins = alu.output.pins.to_vec();
+    output_pins.push(alu.output_is_zero.clone());
+    output_pins.push(alu.output_is_negative.clone());
     println!("getting connected pins");
-    let all_pins = get_all_connected_pins(&output_pins);
+    let all_pins = get_all_connected_pins(&output_pins.to_vec());
+    let x = i16::MIN;
+    let y = i16::MAX;
+    alu.use_add.value.set(true);
+    alu.not_output.value.set(false);
+    alu.inputs[0].set_values(i16_to_bools(x));
+    alu.inputs[1].set_values(i16_to_bools(y));
+
+    println!("pin count: {}", all_pins.len());
     println!("getting all pin links");
     let pin_links = get_all_pin_links(&all_pins);
     let useless_pin_count = pin_links
@@ -202,12 +215,6 @@ fn main() {
         all_pins.len()
     );
 
-    ram.input.set_values(i16_to_bools(1234));
-    ram.load.value.set(true);
-    let address = [false; 12];
-    for i in 0..address.len() {
-        ram.address[i].value.set(address[i]);
-    }
     println!("sorting");
     let sorted_pins = reverse_topological_sort(&all_pins);
     println!("optimizing");
@@ -216,10 +223,12 @@ fn main() {
     optimized_pins.compute();
     println!("ticking");
     optimized_pins.tick();
-    for i in 0..1000 {
-        println!("computing {} of 1000", i);
+    println!("computing 10000x");
+    let start = Instant::now();
+    for i in 0..10000 {
         optimized_pins.compute();
     }
+    println!("time elapsed: {:?}", start.elapsed());
     let result: Vec<bool> = output_pins.iter().map(|pin| pin.value.get()).collect();
     println!("{:?}", result);
 }

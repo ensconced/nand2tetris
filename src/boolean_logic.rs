@@ -75,7 +75,6 @@ impl TwoInOneOutGate {
     }
 
     pub fn or() -> Self {
-        // println!("start or");
         let result = Self::base();
 
         let nand_a = TwoInOneOutGate::nand();
@@ -90,19 +89,19 @@ impl TwoInOneOutGate {
         nand_a.inputs[1].feed_from(result.inputs[0].clone());
         nand_b.inputs[0].feed_from(result.inputs[1].clone());
         nand_b.inputs[1].feed_from(result.inputs[1].clone());
-        // println!("end or");
 
         result
     }
     pub fn and() -> Self {
         // println!("start and");
         let result = Self::base();
-        let nand_gate = TwoInOneOutGate::nand();
-        let not_gate = NotGate::new();
-        result.output.feed_from(not_gate.output);
-        not_gate.input.feed_from(nand_gate.output);
-        nand_gate.inputs[0].feed_from(result.inputs[0].clone());
-        nand_gate.inputs[1].feed_from(result.inputs[1].clone());
+        let nand_a = TwoInOneOutGate::nand();
+        let nand_b = TwoInOneOutGate::nand();
+        result.output.feed_from(nand_b.output);
+        nand_b.inputs[0].feed_from(nand_a.output.clone());
+        nand_b.inputs[1].feed_from(nand_a.output);
+        nand_a.inputs[0].feed_from(result.inputs[0].clone());
+        nand_a.inputs[1].feed_from(result.inputs[1].clone());
         // println!("end and");
         result
     }
@@ -205,21 +204,23 @@ impl Mux {
             output,
         };
 
-        let and_a = TwoInOneOutGate::and();
-        let and_b = TwoInOneOutGate::and();
-        let or = TwoInOneOutGate::or();
-        let not = NotGate::new();
+        let nand_a = TwoInOneOutGate::nand();
+        let nand_b = TwoInOneOutGate::nand();
+        let nand_c = TwoInOneOutGate::nand();
+        let nand_d = TwoInOneOutGate::nand();
 
-        result.output.feed_from(or.output);
-        or.inputs[0].feed_from(and_a.output);
-        or.inputs[1].feed_from(and_b.output);
+        result.output.feed_from(nand_a.output);
+        nand_a.inputs[0].feed_from(nand_b.output);
+        nand_a.inputs[1].feed_from(nand_c.output);
 
-        and_a.inputs[0].feed_from(result.input_a.clone());
-        and_a.inputs[1].feed_from(not.output);
-        not.input.feed_from(result.sel.clone());
+        nand_b.inputs[0].feed_from(result.input_b.clone());
+        nand_b.inputs[1].feed_from(result.sel.clone());
 
-        and_b.inputs[0].feed_from(result.input_b.clone());
-        and_b.inputs[1].feed_from(result.sel.clone());
+        nand_c.inputs[0].feed_from(result.input_a.clone());
+        nand_c.inputs[1].feed_from(nand_d.output);
+
+        nand_d.inputs[0].feed_from(result.sel.clone());
+        nand_d.inputs[1].feed_from(result.sel.clone());
 
         result
     }

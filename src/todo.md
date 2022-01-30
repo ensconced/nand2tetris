@@ -7,6 +7,8 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 
 performance ideas
 
+- can we have each ram512, or ram4k in a separate thread?
+
 - use one representation for pins/connections for building the graph, but a
   different, more optimized one, for actually running
 

@@ -227,19 +227,19 @@ fn test_is_non_zero() {
     }
 }
 
-struct ALU {
-    inputs: [PinArray16; 2],
-    output: PinArray16,
-    zero_inputs: [Rc<Pin>; 2],
-    not_inputs: [Rc<Pin>; 2],
-    use_add: Rc<Pin>,
-    not_output: Rc<Pin>,
-    output_is_zero: Rc<Pin>,
-    output_is_negative: Rc<Pin>,
+pub struct ALU {
+    pub inputs: [PinArray16; 2],
+    pub output: PinArray16,
+    pub zero_inputs: [Rc<Pin>; 2],
+    pub not_inputs: [Rc<Pin>; 2],
+    pub use_add: Rc<Pin>,
+    pub not_output: Rc<Pin>,
+    pub output_is_zero: Rc<Pin>,
+    pub output_is_negative: Rc<Pin>,
 }
 
 impl ALU {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let result = Self {
             inputs: [PinArray16::new(), PinArray16::new()],
             output: PinArray16::new(),

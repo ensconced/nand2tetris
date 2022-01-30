@@ -49,10 +49,9 @@ impl Pin {
     }
     pub fn feed_from(&self, pin: Rc<Pin>) {
         let mut connection = self.connection.borrow_mut();
-        if connection.as_ref().is_some() {
+        if let Some(_) = connection.replace(Connection::Eq(pin)) {
             panic!("pin is already connected");
         }
-        connection.replace(Connection::Eq(pin));
     }
     pub fn nand_connect(&self, input_a: Rc<Pin>, input_b: Rc<Pin>) {
         self.connection

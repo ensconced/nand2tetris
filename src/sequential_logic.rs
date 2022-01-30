@@ -155,15 +155,15 @@ fn test_bit_register() {
 }
 
 #[derive(Default)]
-struct Register {
-    input: PinArray16,
-    output: PinArray16,
-    load: Rc<Pin>,
+pub struct Register {
+    pub input: PinArray16,
+    pub output: PinArray16,
+    pub load: Rc<Pin>,
     bits: [BitRegister; 16],
 }
 
 impl Register {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut result = Self {
             input: PinArray16::new(),
             output: PinArray16::new(),
@@ -226,17 +226,17 @@ fn test_register() {
 }
 
 #[derive(Default)]
-struct Ram8 {
+pub struct Ram8 {
     // TODO - would be nice to be able to remove these
     registers: [Register; 8],
-    input: PinArray16,
-    output: PinArray16,
-    address: [Rc<Pin>; 3],
-    load: Rc<Pin>,
+    pub input: PinArray16,
+    pub output: PinArray16,
+    pub address: [Rc<Pin>; 3],
+    pub load: Rc<Pin>,
 }
 
 impl Ram8 {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut result = Self {
             registers: Default::default(),
             address: [Pin::new(), Pin::new(), Pin::new()],
@@ -268,7 +268,7 @@ impl Ram8 {
         result
     }
 
-    fn tick(&self) {
+    pub fn tick(&self) {
         for register in self.registers.iter() {
             register.tick();
         }
