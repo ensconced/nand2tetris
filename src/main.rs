@@ -122,6 +122,10 @@ fn test_get_all_pin_links() {
     assert_eq!(pin_links, expected);
 }
 
+fn get_pin_idx(pin: &Rc<Pin>, pin_indices: &HashMap<Rc<Pin>, usize>) -> usize {
+    *pin_indices.get(pin).unwrap()
+}
+
 fn optimize(pins: Vec<Rc<Pin>>) -> OptimizedPinCollection {
     let mut pin_indices = HashMap::new();
     for (pin_idx, pin) in pins.iter().enumerate() {
@@ -131,42 +135,48 @@ fn optimize(pins: Vec<Rc<Pin>>) -> OptimizedPinCollection {
     let mut result = OptimizedPinCollection {
         pins: vec![],
         flipflops: vec![],
+        output_pins: vec![],
     };
 
-    let get_pin_idx = |pin| *pin_indices.get(pin).unwrap();
-
-    for pin in pins.into_iter() {
-        let foo = pin.connection.borrow();
-        match foo.as_ref() {
+    for pin in pins.iter() {
+        match pin.connection.borrow().as_ref() {
             Some(Connection::Eq(other_pin)) => {
-                let new_connection = OptimizedConnection::Eq(get_pin_idx(other_pin));
+                let new_connection = OptimizedConnection::Eq(get_pin_idx(other_pin, &pin_indices));
                 let new_pin = OptimizedPin {
                     connection: Some(new_connection),
-                    value: Cell::new(pin.value.get()),
+                    value: pin.value.get(),
                 };
                 result.pins.push(new_pin);
             }
             Some(Connection::Nand(other_pin_a, other_pin_b)) => {
-                let new_connection =
-                    OptimizedConnection::Nand(get_pin_idx(other_pin_a), get_pin_idx(other_pin_b));
+                let new_connection = OptimizedConnection::Nand(
+                    get_pin_idx(other_pin_a, &pin_indices),
+                    get_pin_idx(other_pin_b, &pin_indices),
+                );
                 let new_pin = OptimizedPin {
                     connection: Some(new_connection),
-                    value: Cell::new(pin.value.get()),
+                    value: pin.value.get(),
                 };
                 result.pins.push(new_pin);
             }
             Some(Connection::FlipFlop(other_pin)) => {
                 let new_pin = OptimizedPin {
                     connection: None,
-                    value: Cell::new(pin.value.get()),
+                    value: pin.value.get(),
                 };
                 result.pins.push(new_pin);
                 result.flipflops.push(OptimizedFlipFlop {
-                    input: get_pin_idx(&pin),
-                    output: get_pin_idx(other_pin),
+                    input: get_pin_idx(&pin, &pin_indices),
+                    output: get_pin_idx(other_pin, &pin_indices),
                 });
             }
-            None => {}
+            None => {
+                let new_pin = OptimizedPin {
+                    connection: None,
+                    value: pin.value.get(),
+                };
+                result.pins.push(new_pin);
+            }
         }
     }
 
@@ -175,9 +185,11 @@ fn optimize(pins: Vec<Rc<Pin>>) -> OptimizedPinCollection {
 
 fn main() {
     println!("creating ram");
-    let ram = Ram16k::new();
+    let ram = Ram4k::new();
     let output_pins = ram.output.pins.to_vec();
+    println!("getting connected pins");
     let all_pins = get_all_connected_pins(&output_pins);
+    println!("getting all pin links");
     let pin_links = get_all_pin_links(&all_pins);
     let useless_pin_count = pin_links
         .iter()
@@ -192,30 +204,22 @@ fn main() {
 
     ram.input.set_values(i16_to_bools(1234));
     ram.load.value.set(true);
-    let address = [false; 14];
+    let address = [false; 12];
     for i in 0..address.len() {
         ram.address[i].value.set(address[i]);
     }
     println!("sorting");
     let sorted_pins = reverse_topological_sort(&all_pins);
     println!("optimizing");
-    let optimized_pins = optimize(sorted_pins);
+    let mut optimized_pins = optimize(sorted_pins);
     println!("computing");
-    for pin in optimized_pins.pins {
-        // TODO - need to impl this...
-        pin.compute();
-    }
+    optimized_pins.compute();
     println!("ticking");
-    for flipflop in optimized_pins.flipflops {
-        let output_pin = optimized_pins.pins[flipflop.output];
-        let input_pin = optimized_pins.pins[flipflop.input];
-        output_pin.value.set(input_pin.value.get());
+    optimized_pins.tick();
+    for i in 0..1000 {
+        println!("computing {} of 1000", i);
+        optimized_pins.compute();
     }
-    println!("computing");
-    for pin in optimized_pins.pins {
-        pin.compute();
-    }
-    // TODO - read output from optimized pins...
     let result: Vec<bool> = output_pins.iter().map(|pin| pin.value.get()).collect();
     println!("{:?}", result);
 }

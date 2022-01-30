@@ -126,7 +126,7 @@ pub enum OptimizedConnection {
 
 pub struct OptimizedPin {
     pub connection: Option<OptimizedConnection>,
-    pub value: Cell<bool>,
+    pub value: bool,
 }
 
 pub struct OptimizedFlipFlop {
@@ -137,4 +137,28 @@ pub struct OptimizedFlipFlop {
 pub struct OptimizedPinCollection {
     pub pins: Vec<OptimizedPin>,
     pub flipflops: Vec<OptimizedFlipFlop>,
+    pub output_pins: Vec<OptimizedPin>,
+}
+
+impl OptimizedPinCollection {
+    pub fn compute(&mut self) {
+        for pin_idx in 0..self.pins.len() {
+            match self.pins[pin_idx].connection {
+                Some(OptimizedConnection::Eq(other_pin_idx)) => {
+                    self.pins[pin_idx].value = self.pins[other_pin_idx].value
+                }
+                Some(OptimizedConnection::Nand(pin_a_idx, pin_b_idx)) => {
+                    self.pins[pin_idx].value =
+                        !(self.pins[pin_a_idx].value && self.pins[pin_b_idx].value);
+                }
+                None => {}
+            }
+        }
+    }
+
+    pub fn tick(&mut self) {
+        for flipflop in self.flipflops.iter() {
+            self.pins[flipflop.output].value = self.pins[flipflop.input].value;
+        }
+    }
 }
