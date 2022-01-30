@@ -6,9 +6,12 @@ mod sequential_logic;
 mod test_utils;
 
 use crate::ordering::{get_all_connected_pins, reverse_topological_sort, sort_and_compute};
-use crate::pin::{Connection, Pin};
+use crate::pin::{
+    Connection, OptimizedConnection, OptimizedFlipFlop, OptimizedPin, OptimizedPinCollection, Pin,
+};
 use crate::sequential_logic::{Ram16k, Ram4k, Ram512};
 use crate::test_utils::i16_to_bools;
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -119,6 +122,57 @@ fn test_get_all_pin_links() {
     assert_eq!(pin_links, expected);
 }
 
+fn optimize(pins: Vec<Rc<Pin>>) -> OptimizedPinCollection {
+    let mut pin_indices = HashMap::new();
+    for (pin_idx, pin) in pins.iter().enumerate() {
+        pin_indices.insert(pin.clone(), pin_idx);
+    }
+
+    let mut result = OptimizedPinCollection {
+        pins: vec![],
+        flipflops: vec![],
+    };
+
+    let get_pin_idx = |pin| *pin_indices.get(pin).unwrap();
+
+    for pin in pins.into_iter() {
+        let foo = pin.connection.borrow();
+        match foo.as_ref() {
+            Some(Connection::Eq(other_pin)) => {
+                let new_connection = OptimizedConnection::Eq(get_pin_idx(other_pin));
+                let new_pin = OptimizedPin {
+                    connection: Some(new_connection),
+                    value: Cell::new(pin.value.get()),
+                };
+                result.pins.push(new_pin);
+            }
+            Some(Connection::Nand(other_pin_a, other_pin_b)) => {
+                let new_connection =
+                    OptimizedConnection::Nand(get_pin_idx(other_pin_a), get_pin_idx(other_pin_b));
+                let new_pin = OptimizedPin {
+                    connection: Some(new_connection),
+                    value: Cell::new(pin.value.get()),
+                };
+                result.pins.push(new_pin);
+            }
+            Some(Connection::FlipFlop(other_pin)) => {
+                let new_pin = OptimizedPin {
+                    connection: None,
+                    value: Cell::new(pin.value.get()),
+                };
+                result.pins.push(new_pin);
+                result.flipflops.push(OptimizedFlipFlop {
+                    input: get_pin_idx(&pin),
+                    output: get_pin_idx(other_pin),
+                });
+            }
+            None => {}
+        }
+    }
+
+    result
+}
+
 fn main() {
     println!("creating ram");
     let ram = Ram16k::new();
@@ -144,16 +198,24 @@ fn main() {
     }
     println!("sorting");
     let sorted_pins = reverse_topological_sort(&all_pins);
+    println!("optimizing");
+    let optimized_pins = optimize(sorted_pins);
     println!("computing");
-    for pin in sorted_pins.iter() {
+    for pin in optimized_pins.pins {
+        // TODO - need to impl this...
         pin.compute();
     }
     println!("ticking");
-    ram.tick();
+    for flipflop in optimized_pins.flipflops {
+        let output_pin = optimized_pins.pins[flipflop.output];
+        let input_pin = optimized_pins.pins[flipflop.input];
+        output_pin.value.set(input_pin.value.get());
+    }
     println!("computing");
-    for pin in sorted_pins {
+    for pin in optimized_pins.pins {
         pin.compute();
     }
+    // TODO - read output from optimized pins...
     let result: Vec<bool> = output_pins.iter().map(|pin| pin.value.get()).collect();
     println!("{:?}", result);
 }

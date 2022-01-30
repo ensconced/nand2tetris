@@ -118,3 +118,23 @@ impl PinArray16 {
         Self { pins }
     }
 }
+
+pub enum OptimizedConnection {
+    Eq(usize),
+    Nand(usize, usize),
+}
+
+pub struct OptimizedPin {
+    pub connection: Option<OptimizedConnection>,
+    pub value: Cell<bool>,
+}
+
+pub struct OptimizedFlipFlop {
+    pub input: usize,
+    pub output: usize,
+}
+
+pub struct OptimizedPinCollection {
+    pub pins: Vec<OptimizedPin>,
+    pub flipflops: Vec<OptimizedFlipFlop>,
+}
