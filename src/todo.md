@@ -1,5 +1,12 @@
+TODO
+
+- tidy up
+- break project into better parts - separate crates? - HDL part, optimization part...
+
 I think getting good enough performance out of this with gate-level emulation is going to
-be very difficult, if not impossible.
+be very difficult, if not impossible...
+
+well maybe I'm not quite ready yet to give up. It would be good to know what clock speed will be necessary to say, get tetris working...
 
 so the new goal is to do it dynamically i.e. have different levels of simulation, which we switch
 between in the visualisation as you focus on different elements.
@@ -14,6 +21,18 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 - and highlight any cycles...
 
 performance ideas
+
+- when you remove sequential logic (i.e. flipflops) you should be left with some combinational units which can be memoized...
+
+- https://en.wikipedia.org/wiki/Logic_optimization
+
+- uplifting logic by spotting and compressing motifs in netlist into "smart nodes"? e.g. dedicated mux nodes, dedicated register nodes...etc etc
+
+- multiple passes of uplifting...
+
+- this would mean you basically implement multiple levels of abstraction at once - a Ram16k would be implemented directly in rust, but at the same time you can add whatever gate-level logic you want, it just might not be so optimized...
+
+- break up
 
 - can we have each ram512, or ram4k in a separate thread?
 
@@ -50,6 +69,7 @@ refactoring ideas
 - DRY up ram code
 - use macros for generating similar gates with diff number of inputs etc
 - cargo clippy and address issues
+- use macros to use rust as a nice HDL language?
 
 extra ideas
 
@@ -68,3 +88,5 @@ AVR / arduino
 other real well known but simple ISAs
 8086
 6502
+
+https://gitlab.com/x653/nand2tetris-fpga/-/tree/master/
