@@ -20,12 +20,12 @@ impl HalfAdder {
         let and = TwoInOneOutGate::and();
         let xor = TwoInOneOutGate::xor();
 
-        result.outputs[0].feed_from(and.output);
-        result.outputs[1].feed_from(xor.output);
-        and.inputs[0].feed_from(result.inputs[0].clone());
-        and.inputs[1].feed_from(result.inputs[1].clone());
-        xor.inputs[0].feed_from(result.inputs[0].clone());
-        xor.inputs[1].feed_from(result.inputs[1].clone());
+        result.outputs[0].feed_from(&and.output);
+        result.outputs[1].feed_from(&xor.output);
+        and.inputs[0].feed_from(&result.inputs[0]);
+        and.inputs[1].feed_from(&result.inputs[1]);
+        xor.inputs[0].feed_from(&result.inputs[0]);
+        xor.inputs[1].feed_from(&result.inputs[1]);
 
         // println!("end halfadder");
         result
@@ -68,18 +68,18 @@ impl FullAdder {
         let half_adder_a = HalfAdder::new();
         let half_adder_b = HalfAdder::new();
 
-        half_adder_a.inputs[0].feed_from(result.inputs[0].clone());
-        half_adder_a.inputs[1].feed_from(result.inputs[1].clone());
+        half_adder_a.inputs[0].feed_from(&result.inputs[0]);
+        half_adder_a.inputs[1].feed_from(&result.inputs[1]);
 
-        half_adder_b.inputs[0].feed_from(half_adder_a.outputs[1].clone());
-        half_adder_b.inputs[1].feed_from(result.inputs[2].clone());
+        half_adder_b.inputs[0].feed_from(&half_adder_a.outputs[1]);
+        half_adder_b.inputs[1].feed_from(&result.inputs[2]);
 
         let or = TwoInOneOutGate::or();
-        or.inputs[0].feed_from(half_adder_a.outputs[0].clone());
-        or.inputs[1].feed_from(half_adder_b.outputs[0].clone());
+        or.inputs[0].feed_from(&half_adder_a.outputs[0]);
+        or.inputs[1].feed_from(&half_adder_b.outputs[0]);
 
-        result.outputs[0].feed_from(or.output);
-        result.outputs[1].feed_from(half_adder_b.outputs[1].clone());
+        result.outputs[0].feed_from(&or.output);
+        result.outputs[1].feed_from(&half_adder_b.outputs[1]);
         // println!("end fulladder");
 
         result
@@ -114,16 +114,16 @@ impl Add16 {
         let result = Self { inputs, output };
 
         let first_adder = HalfAdder::new();
-        first_adder.inputs[0].feed_from(result.inputs[0].pins[15].clone());
-        first_adder.inputs[1].feed_from(result.inputs[1].pins[15].clone());
-        result.output.pins[15].feed_from(first_adder.outputs[1].clone());
+        first_adder.inputs[0].feed_from(&result.inputs[0].pins[15]);
+        first_adder.inputs[1].feed_from(&result.inputs[1].pins[15]);
+        result.output.pins[15].feed_from(&first_adder.outputs[1]);
         let mut carry = first_adder.outputs[0].clone();
         for i in (0..15).rev() {
             let adder = FullAdder::new();
-            adder.inputs[0].feed_from(result.inputs[0].pins[i].clone());
-            adder.inputs[1].feed_from(result.inputs[1].pins[i].clone());
-            adder.inputs[2].feed_from(carry);
-            result.output.pins[i].feed_from(adder.outputs[1].clone());
+            adder.inputs[0].feed_from(&result.inputs[0].pins[i]);
+            adder.inputs[1].feed_from(&result.inputs[1].pins[i]);
+            adder.inputs[2].feed_from(&carry);
+            result.output.pins[i].feed_from(&adder.outputs[1]);
             carry = adder.outputs[0].clone();
         }
 
@@ -163,9 +163,9 @@ impl Inc16 {
         let one = PinArray16::new();
         one.pins[15].value.set(true);
         let add = Add16::new();
-        result.output.feed_from(add.output);
-        add.inputs[0].feed_from(one);
-        add.inputs[1].feed_from(result.input.clone());
+        result.output.feed_from(&add.output);
+        add.inputs[0].feed_from(&one);
+        add.inputs[1].feed_from(&result.input);
 
         result
     }
@@ -201,13 +201,13 @@ impl IsNonZero16 {
         let or8way_b = Or8Way::new();
         let or = TwoInOneOutGate::or();
 
-        or.inputs[0].feed_from(or8way_a.output);
-        or.inputs[1].feed_from(or8way_b.output);
+        or.inputs[0].feed_from(&or8way_a.output);
+        or.inputs[1].feed_from(&or8way_b.output);
         for i in 0..8 {
-            or8way_a.input[i].feed_from(result.input.pins[i].clone());
-            or8way_b.input[i].feed_from(result.input.pins[i + 8].clone());
+            or8way_a.input[i].feed_from(&result.input.pins[i]);
+            or8way_b.input[i].feed_from(&result.input.pins[i + 8]);
         }
-        result.output.feed_from(or.output);
+        result.output.feed_from(&or.output);
 
         result
     }
@@ -257,46 +257,46 @@ impl ALU {
 
         for i in 0..=1 {
             let zeroing_mux = Mux16::new();
-            zeroing_mux.inputs[0].feed_from(result.inputs[i].clone());
-            zeroing_mux.inputs[1].feed_from(constant_false.clone());
-            zeroing_mux.sel.feed_from(result.zero_inputs[i].clone());
+            zeroing_mux.inputs[0].feed_from(&result.inputs[i]);
+            zeroing_mux.inputs[1].feed_from(&constant_false);
+            zeroing_mux.sel.feed_from(&result.zero_inputs[i]);
 
             let not = Not16::new();
             let not_input_mux = Mux16::new();
-            not.input.feed_from(zeroing_mux.output.clone());
+            not.input.feed_from(&zeroing_mux.output);
 
-            not_input_mux.inputs[0].feed_from(zeroing_mux.output);
-            not_input_mux.inputs[1].feed_from(not.output);
-            not_input_mux.sel.feed_from(result.not_inputs[i].clone());
+            not_input_mux.inputs[0].feed_from(&zeroing_mux.output);
+            not_input_mux.inputs[1].feed_from(&not.output);
+            not_input_mux.sel.feed_from(&result.not_inputs[i]);
 
             // TODO - could potentially be faster to dmux here to either go to
             // AND or ADD, instead of always going to both?
-            and.inputs[i].feed_from(not_input_mux.output.clone());
-            add.inputs[i].feed_from(not_input_mux.output.clone());
+            and.inputs[i].feed_from(&not_input_mux.output);
+            add.inputs[i].feed_from(&not_input_mux.output);
         }
         let sel_function_mux = Mux16::new();
-        sel_function_mux.inputs[0].feed_from(and.output);
-        sel_function_mux.inputs[1].feed_from(add.output);
-        sel_function_mux.sel.feed_from(result.use_add.clone());
+        sel_function_mux.inputs[0].feed_from(&and.output);
+        sel_function_mux.inputs[1].feed_from(&add.output);
+        sel_function_mux.sel.feed_from(&result.use_add);
 
         let not = Not16::new();
-        not.input.feed_from(sel_function_mux.output.clone());
+        not.input.feed_from(&sel_function_mux.output);
 
         let not_output_mux = Mux16::new();
-        not_output_mux.inputs[0].feed_from(sel_function_mux.output);
-        not_output_mux.inputs[1].feed_from(not.output);
-        not_output_mux.sel.feed_from(result.not_output.clone());
+        not_output_mux.inputs[0].feed_from(&sel_function_mux.output);
+        not_output_mux.inputs[1].feed_from(&not.output);
+        not_output_mux.sel.feed_from(&result.not_output);
 
-        result.output.feed_from(not_output_mux.output.clone());
+        result.output.feed_from(&not_output_mux.output);
         result
             .output_is_negative
-            .feed_from(not_output_mux.output.pins[0].clone());
+            .feed_from(&not_output_mux.output.pins[0]);
 
         let is_non_zero = IsNonZero16::new();
-        is_non_zero.input.feed_from(not_output_mux.output);
+        is_non_zero.input.feed_from(&not_output_mux.output);
         let not = NotGate::new();
-        not.input.feed_from(is_non_zero.output);
-        result.output_is_zero.feed_from(not.output);
+        not.input.feed_from(&is_non_zero.output);
+        result.output_is_zero.feed_from(&not.output);
 
         result
     }

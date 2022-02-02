@@ -112,7 +112,7 @@ mod test_reverse_topological_sort {
     fn simple_pair() {
         let pin_a = Pin::new();
         let pin_b = Pin::new();
-        pin_a.feed_from(pin_b.clone());
+        pin_a.feed_from(&pin_b);
         let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![pin_a.clone()]));
         assert_eq!(sorted, vec![pin_b, pin_a]);
     }
@@ -123,7 +123,7 @@ mod test_reverse_topological_sort {
         let mut current_pin = output_pin.clone();
         for _ in 0..10 {
             let pin = Pin::new();
-            current_pin.feed_from(pin.clone());
+            current_pin.feed_from(&pin);
             current_pin = pin;
         }
         let sorted = reverse_topological_sort(&get_all_connected_pins(&vec![output_pin]));
@@ -213,7 +213,7 @@ mod test_all_connected_pins {
     fn simple_pair() {
         let pin_a = Pin::new();
         let pin_b = Pin::new();
-        pin_b.feed_from(pin_a.clone());
+        pin_b.feed_from(&pin_a);
         let outputs = vec![pin_b.clone()];
         let result = get_all_connected_pins(&outputs);
         let mut expected = HashSet::new();
@@ -231,7 +231,7 @@ mod test_all_connected_pins {
         for _ in 0..10 {
             let next_pin = Pin::new();
             expected.insert(next_pin.clone());
-            pin.feed_from(next_pin.clone());
+            pin.feed_from(&next_pin);
             pin = next_pin;
         }
         let outputs = vec![first_pin];
@@ -257,8 +257,8 @@ mod test_all_connected_pins {
         let nand_a = TwoInOneOutGate::nand();
         let nand_b = TwoInOneOutGate::nand();
         let nand_c = TwoInOneOutGate::nand();
-        nand_a.inputs[0].feed_from(nand_b.output.clone());
-        nand_a.inputs[1].feed_from(nand_c.output.clone());
+        nand_a.inputs[0].feed_from(&nand_b.output);
+        nand_a.inputs[1].feed_from(&nand_c.output);
         let outputs = vec![nand_a.output.clone()];
         let result = get_all_connected_pins(&outputs);
         for nand in [nand_a, nand_b, nand_c] {
@@ -277,8 +277,8 @@ mod test_all_connected_pins {
             TwoInOneOutGate::nand(),
             TwoInOneOutGate::nand(),
         ];
-        nands[0].inputs[0].feed_from(nands[1].output.clone());
-        nands[2].inputs[0].feed_from(nands[3].output.clone());
+        nands[0].inputs[0].feed_from(&nands[1].output);
+        nands[2].inputs[0].feed_from(&nands[3].output);
         let mut expected = HashSet::new();
         for nand in nands.iter() {
             expected.insert(nand.output.clone());

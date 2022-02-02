@@ -76,7 +76,7 @@ fn test_get_all_pin_links() {
     let pin_d = Pin::new();
     let pin_e = Pin::new();
 
-    pin_a.feed_from(pin_b.clone());
+    pin_a.feed_from(&pin_b);
     pin_b.nand_connect(pin_c.clone(), pin_d.clone());
     pin_d.flipflop_connect(pin_e.clone());
 

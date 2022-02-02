@@ -47,9 +47,9 @@ impl Pin {
             connection: RefCell::new(None),
         })
     }
-    pub fn feed_from(&self, pin: Rc<Pin>) {
+    pub fn feed_from(&self, pin: &Rc<Pin>) {
         let mut connection = self.connection.borrow_mut();
-        if let Some(_) = connection.replace(Connection::Eq(pin)) {
+        if let Some(_) = connection.replace(Connection::Eq(pin.clone())) {
             panic!("pin is already connected");
         }
     }
@@ -93,9 +93,9 @@ impl PinArray16 {
         Self { pins }
     }
 
-    pub fn feed_from(&self, other: Self) {
-        for (i, pin) in other.pins.into_iter().enumerate() {
-            self.pins[i].feed_from(pin);
+    pub fn feed_from(&self, other: &Self) {
+        for (i, pin) in other.pins.clone().into_iter().enumerate() {
+            self.pins[i].feed_from(&pin);
         }
     }
 

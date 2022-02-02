@@ -43,7 +43,7 @@ fn test_flipflop() {
 fn test_flip_flop_pair() {
     let flipflop_a = FlipFlop::new();
     let flipflop_b = FlipFlop::new();
-    flipflop_b.input.feed_from(flipflop_a.output.clone());
+    flipflop_b.input.feed_from(&flipflop_a.output);
 
     let all_pins = get_all_connected_pins(&vec![flipflop_b.output.clone()]);
 
@@ -68,7 +68,7 @@ fn test_flipflop_chain() {
     for i in 0..10 {
         let flip_flop = FlipFlop::new();
         if i > 0 {
-            flip_flop.input.feed_from(flip_flops[i - 1].output.clone());
+            flip_flop.input.feed_from(&flip_flops[i - 1].output);
         }
         flip_flops.push(flip_flop);
     }
@@ -111,12 +111,12 @@ impl BitRegister {
             flipflop: FlipFlop::new(),
         };
 
-        result.output.feed_from(result.flipflop.output.clone());
+        result.output.feed_from(&result.flipflop.output);
         let mux = Mux::new();
-        mux.input_a.feed_from(result.flipflop.output.clone());
-        result.flipflop.input.feed_from(mux.output);
-        mux.sel.feed_from(result.load.clone());
-        mux.input_b.feed_from(result.input.clone());
+        mux.input_a.feed_from(&result.flipflop.output);
+        result.flipflop.input.feed_from(&mux.output);
+        mux.sel.feed_from(&result.load);
+        mux.input_b.feed_from(&result.input);
 
         result
     }
@@ -172,9 +172,9 @@ impl Register {
         };
         for i in 0..16 {
             let bit = BitRegister::new();
-            bit.load.feed_from(result.load.clone());
-            bit.input.feed_from(result.input.pins[i].clone());
-            result.output.pins[i].feed_from(bit.output.clone());
+            bit.load.feed_from(&result.load);
+            bit.input.feed_from(&result.input.pins[i]);
+            result.output.pins[i].feed_from(&bit.output);
             result.bits[i] = bit;
         }
         result
@@ -246,22 +246,22 @@ impl Ram8 {
         };
 
         let mux = Mux8Way16::new();
-        result.output.feed_from(mux.output);
+        result.output.feed_from(&mux.output);
 
         let dmux = DMux8Way::new();
-        dmux.input.feed_from(result.load.clone());
+        dmux.input.feed_from(&result.load);
 
         for i in 0..3 {
             let sel_pin = result.address[i].clone();
-            mux.sel[i].feed_from(sel_pin.clone());
-            dmux.sel[i].feed_from(sel_pin)
+            mux.sel[i].feed_from(&sel_pin);
+            dmux.sel[i].feed_from(&sel_pin)
         }
 
         for i in 0..8 {
             let reg = Register::new();
-            mux.inputs[i].feed_from(reg.output.clone());
-            reg.load.feed_from(dmux.outputs[i].clone());
-            reg.input.feed_from(result.input.clone());
+            mux.inputs[i].feed_from(&reg.output);
+            reg.load.feed_from(&dmux.outputs[i]);
+            reg.input.feed_from(&result.input);
             result.registers[i] = reg;
         }
 
@@ -346,24 +346,24 @@ impl Ram64 {
         };
 
         let dmux = DMux8Way::new();
-        dmux.input.feed_from(result.load.clone());
+        dmux.input.feed_from(&result.load);
 
         let mux = Mux8Way16::new();
-        result.output.feed_from(mux.output);
+        result.output.feed_from(&mux.output);
 
         for i in 0..3 {
             let sel_pin = result.address[i].clone();
-            dmux.sel[i].feed_from(sel_pin.clone());
-            mux.sel[i].feed_from(sel_pin)
+            dmux.sel[i].feed_from(&sel_pin);
+            mux.sel[i].feed_from(&sel_pin)
         }
 
         for i in 0..8 {
             let ram = Ram8::new();
-            ram.input.feed_from(result.input.clone());
-            mux.inputs[i].feed_from(ram.output.clone());
-            ram.load.feed_from(dmux.outputs[i].clone());
+            ram.input.feed_from(&result.input);
+            mux.inputs[i].feed_from(&ram.output);
+            ram.load.feed_from(&dmux.outputs[i]);
             for j in 0..3 {
-                ram.address[j].feed_from(result.address[3 + j].clone());
+                ram.address[j].feed_from(&result.address[3 + j]);
             }
             result.ram8s[i] = ram;
         }
@@ -441,24 +441,24 @@ impl Ram512 {
         }
 
         let dmux = DMux8Way::new();
-        dmux.input.feed_from(result.load.clone());
+        dmux.input.feed_from(&result.load);
 
         let mux = Mux8Way16::new();
-        result.output.feed_from(mux.output);
+        result.output.feed_from(&mux.output);
 
         for i in 0..3 {
             let sel_pin = result.address[i].clone();
-            dmux.sel[i].feed_from(sel_pin.clone());
-            mux.sel[i].feed_from(sel_pin)
+            dmux.sel[i].feed_from(&sel_pin);
+            mux.sel[i].feed_from(&sel_pin)
         }
 
         for i in 0..8 {
             let ram = Ram64::new();
-            ram.input.feed_from(result.input.clone());
-            mux.inputs[i].feed_from(ram.output.clone());
-            ram.load.feed_from(dmux.outputs[i].clone());
+            ram.input.feed_from(&result.input);
+            mux.inputs[i].feed_from(&ram.output);
+            ram.load.feed_from(&dmux.outputs[i]);
             for j in 0..6 {
-                ram.address[j].feed_from(result.address[3 + j].clone());
+                ram.address[j].feed_from(&result.address[3 + j]);
             }
             result.ram64s[i] = ram;
         }
@@ -537,24 +537,24 @@ impl Ram4k {
         }
 
         let dmux = DMux8Way::new();
-        dmux.input.feed_from(result.load.clone());
+        dmux.input.feed_from(&result.load);
 
         let mux = Mux8Way16::new();
-        result.output.feed_from(mux.output);
+        result.output.feed_from(&mux.output);
 
         for i in 0..3 {
             let sel_pin = result.address[i].clone();
-            dmux.sel[i].feed_from(sel_pin.clone());
-            mux.sel[i].feed_from(sel_pin)
+            dmux.sel[i].feed_from(&sel_pin);
+            mux.sel[i].feed_from(&sel_pin)
         }
 
         for i in 0..8 {
             let ram = Ram512::new();
-            ram.input.feed_from(result.input.clone());
-            mux.inputs[i].feed_from(ram.output.clone());
-            ram.load.feed_from(dmux.outputs[i].clone());
+            ram.input.feed_from(&result.input);
+            mux.inputs[i].feed_from(&ram.output);
+            ram.load.feed_from(&dmux.outputs[i]);
             for j in 0..9 {
-                ram.address[j].feed_from(result.address[3 + j].clone());
+                ram.address[j].feed_from(&result.address[3 + j]);
             }
             result.ram512s[i] = Box::new(ram);
         }
@@ -638,24 +638,24 @@ impl Ram16k {
         }
 
         let dmux = DMux4Way::new();
-        dmux.input.feed_from(result.load.clone());
+        dmux.input.feed_from(&result.load);
 
         let mux = Mux4Way16::new();
-        result.output.feed_from(mux.output);
+        result.output.feed_from(&mux.output);
 
         for i in 0..2 {
             let sel_pin = result.address[i].clone();
-            dmux.sel[i].feed_from(sel_pin.clone());
-            mux.sel[i].feed_from(sel_pin)
+            dmux.sel[i].feed_from(&sel_pin);
+            mux.sel[i].feed_from(&sel_pin)
         }
 
         for i in 0..4 {
             let ram = Ram4k::new();
-            ram.input.feed_from(result.input.clone());
-            mux.inputs[i].feed_from(ram.output.clone());
-            ram.load.feed_from(dmux.outputs[i].clone());
+            ram.input.feed_from(&result.input);
+            mux.inputs[i].feed_from(&ram.output);
+            ram.load.feed_from(&dmux.outputs[i]);
             for j in 0..12 {
-                ram.address[j].feed_from(result.address[2 + j].clone());
+                ram.address[j].feed_from(&result.address[2 + j]);
             }
             result.ram4ks[i] = ram;
         }
@@ -745,30 +745,30 @@ impl Counter {
 
         let or_a = TwoInOneOutGate::or();
         let or_b = TwoInOneOutGate::or();
-        result.register.load.feed_from(or_a.output);
-        or_a.inputs[0].feed_from(result.inc.clone());
-        or_a.inputs[1].feed_from(or_b.output);
-        or_b.inputs[0].feed_from(result.load.clone());
-        or_b.inputs[1].feed_from(result.reset.clone());
+        result.register.load.feed_from(&or_a.output);
+        or_a.inputs[0].feed_from(&result.inc);
+        or_a.inputs[1].feed_from(&or_b.output);
+        or_b.inputs[0].feed_from(&result.load);
+        or_b.inputs[1].feed_from(&result.reset);
 
         let mux_a = Mux16::new();
         let mux_b = Mux16::new();
         let mux_c = Mux16::new();
-        result.register.input.feed_from(mux_a.output);
-        mux_a.sel.feed_from(result.reset.clone());
-        mux_a.inputs[1].feed_from(zero.clone());
-        mux_a.inputs[0].feed_from(mux_b.output);
-        mux_b.sel.feed_from(result.load.clone());
-        mux_b.inputs[1].feed_from(result.input.clone());
-        mux_b.inputs[0].feed_from(mux_c.output);
-        mux_c.inputs[0].feed_from(zero);
-        mux_c.inputs[1].feed_from(adder.output);
-        mux_c.sel.feed_from(result.inc.clone());
+        result.register.input.feed_from(&mux_a.output);
+        mux_a.sel.feed_from(&result.reset);
+        mux_a.inputs[1].feed_from(&zero);
+        mux_a.inputs[0].feed_from(&mux_b.output);
+        mux_b.sel.feed_from(&result.load);
+        mux_b.inputs[1].feed_from(&result.input);
+        mux_b.inputs[0].feed_from(&mux_c.output);
+        mux_c.inputs[0].feed_from(&zero);
+        mux_c.inputs[1].feed_from(&adder.output);
+        mux_c.sel.feed_from(&result.inc);
 
-        adder.inputs[0].feed_from(result.register.output.clone());
-        adder.inputs[1].feed_from(one);
+        adder.inputs[0].feed_from(&result.register.output);
+        adder.inputs[1].feed_from(&one);
 
-        result.output.feed_from(result.register.output.clone());
+        result.output.feed_from(&result.register.output);
 
         result
     }
