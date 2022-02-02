@@ -6,10 +6,10 @@ TODO
 I think getting good enough performance out of this with gate-level emulation is going to
 be very difficult, if not impossible...
 
-well maybe I'm not quite ready yet to give up. It would be good to know what clock speed will be necessary to say, get tetris working...
+well maybe I'm not quite ready yet to give up. It would be good to know what clock speed will be necessary to say, get tetris working - we can determine this by running on the actual fpga...
 
 so the new goal is to do it dynamically i.e. have different levels of simulation, which we switch
-between in the visualisation as you focus on different elements.
+between in the visualisation as you focus on different elements?
 
 I guess that means each element should just have a high-level simulation...but you can drill down as far as you like.
 
@@ -22,7 +22,13 @@ do we need a new connection enum variant for flipflops, to allow properly includ
 
 performance ideas
 
-- when you remove sequential logic (i.e. flipflops) you should be left with some combinational units which can be memoized...
+- implement some proper benchmarking and test harness of sorts with big array of tweakable strategies...
+
+- implement event-driven strategy using priority queue as described by bailey
+
+- when you remove sequential logic (i.e. flipflops) you should be left with some combinational units which can be memoized?
+
+- implement different strategies
 
 - https://en.wikipedia.org/wiki/Logic_optimization
 
