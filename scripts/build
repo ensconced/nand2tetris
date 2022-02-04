@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -eu
+
+rsync -r --port 18683 fpga joe@192.168.178.40:~/dev/vivado-scripting
+ssh -t joe@192.168.178.40 -p 18683 'cd ~/dev/vivado-scripting/fpga && /media/joe/seagate/Vivado/2021.2/bin/vivado -mode batch -source script.tcl'

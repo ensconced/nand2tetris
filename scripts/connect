@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-# TODO - first rsync up current version of vhdl etc...
-
-ssh -t joe@192.168.178.40 -p 18683 'cd ~/dev/vivado-scripting && bash --login'
