@@ -1,1 +1,3 @@
 /target
+/fpga/vivado*.jou
+/fpga/vivado*.log
