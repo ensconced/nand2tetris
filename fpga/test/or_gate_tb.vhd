@@ -1,15 +1,18 @@
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+
 ENTITY or_gate_tb IS
 END or_gate_tb;
 
 ARCHITECTURE Behavioral OF or_gate_tb IS
   COMPONENT or_gate IS
     PORT (
-      input_a : IN BIT;
-      input_b : IN BIT;
-      output : OUT BIT);
+      input_a : IN STD_ULOGIC;
+      input_b : IN STD_ULOGIC;
+      output : OUT STD_ULOGIC);
   END COMPONENT;
 
-  SIGNAL a, b, c : BIT;
+  SIGNAL a, b, c : STD_ULOGIC;
 
 BEGIN
   uut : or_gate PORT MAP(
@@ -20,28 +23,18 @@ BEGIN
 
   stim : PROCESS
   BEGIN
-    a <= '0';
-    b <= '0';
-    WAIT FOR 10 ns;
-    ASSERT (c = '0')
-    REPORT "test failed for combination 00" SEVERITY failure;
-    a <= '0';
-    b <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (c = '1')
-    REPORT "test failed for combination 01" SEVERITY failure;
-
-    a <= '1';
-    b <= '1';
-    WAIT FOR 10ns;
-    ASSERT (c = '1')
-    REPORT "test failed for combination 11" SEVERITY failure;
-
-    a <= '1';
-    b <= '0';
-    WAIT FOR 10 ns;
-    ASSERT (c = '1')
-    REPORT "test failed for combination 10" SEVERITY failure;
+    FOR i IN STD_ULOGIC RANGE '0' TO '1' LOOP
+      FOR j IN STD_ULOGIC RANGE '0' TO '1' LOOP
+        a <= i;
+        b <= j;
+        WAIT FOR 10 ns;
+        ASSERT (c = (a OR b)) REPORT "test failed for a: "
+        & STD_ULOGIC'image(i) &
+        "b: " &
+        STD_ULOGIC'image(j)
+        SEVERITY failure;
+      END LOOP;
+    END LOOP;
     WAIT;
   END PROCESS;
 END Behavioral;
