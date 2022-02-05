@@ -30,7 +30,7 @@ BEGIN
         WAIT FOR 10 ns;
         ASSERT (c = (a OR b)) REPORT "test failed for a: "
         & STD_ULOGIC'image(i) &
-        "b: " &
+        " b: " &
         STD_ULOGIC'image(j)
         SEVERITY failure;
       END LOOP;

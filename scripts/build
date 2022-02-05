@@ -7,7 +7,7 @@ rsync -r --port 18683 fpga joe@192.168.178.40:~/dev/vivado-scripting
 expect -c '
 set timeout -1
 spawn ./scripts/drive-vivado
-expect Failure
+expect -re "Failure|ERROR"
 send \x03
 exit 1
 '
