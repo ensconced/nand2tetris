@@ -20,7 +20,7 @@ foreach simset $simset_list {
   launch_simulation -simset $simset
 }
 
-synth_design -top dmux -part xc7a35tcpg236-1 -verbose
+synth_design -top not16 -part xc7a35tcpg236-1
 opt_design
 place_design
 route_design
