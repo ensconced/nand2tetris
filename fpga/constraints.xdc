@@ -9,13 +9,13 @@
 #	create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports CLK100MHZ]
 
 # Switches
-set_property PACKAGE_PIN V17 [get_ports {input_b}]
-	set_property IOSTANDARD LVCMOS33 [get_ports {input_b}]
-set_property PACKAGE_PIN V16 [get_ports {input_a}]
-	set_property IOSTANDARD LVCMOS33 [get_ports {input_a}]
-set_property PACKAGE_PIN W16 [get_ports {sel}]
+set_property PACKAGE_PIN V17 [get_ports {sel}]
 	set_property IOSTANDARD LVCMOS33 [get_ports {sel}]
+set_property PACKAGE_PIN V16 [get_ports {input}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {input}]
 
+# set_property PACKAGE_PIN W16 [get_ports {sel}]
+	# set_property IOSTANDARD LVCMOS33 [get_ports {sel}]
 #set_property PACKAGE_PIN W17 [get_ports {sw[3]}]
 	#set_property IOSTANDARD LVCMOS33 [get_ports {sw[3]}]
 #set_property PACKAGE_PIN W15 [get_ports {sw[4]}]
@@ -45,10 +45,11 @@ set_property PACKAGE_PIN W16 [get_ports {sel}]
 
 
 # LEDs
-set_property PACKAGE_PIN U16 [get_ports {output}]
-	set_property IOSTANDARD LVCMOS33 [get_ports {output}]
-# set_property PACKAGE_PIN E19 [get_ports {LED[1]}]
-	# set_property IOSTANDARD LVCMOS33 [get_ports {LED[1]}]
+set_property PACKAGE_PIN U16 [get_ports {output_b}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {output_b}]
+set_property PACKAGE_PIN E19 [get_ports {output_a}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {output_a}]
+
 # set_property PACKAGE_PIN U19 [get_ports {LED[2]}]
 	# set_property IOSTANDARD LVCMOS33 [get_ports {LED[2]}]
 # set_property PACKAGE_PIN V19 [get_ports {LED[3]}]

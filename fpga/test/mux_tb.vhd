@@ -37,7 +37,7 @@ BEGIN
           ELSE
             expected_output := i;
           END IF;
-          WAIT FOR 100 ns;
+          WAIT FOR 10 ns;
           ASSERT (output = expected_output) REPORT "test failed for a: " &
           STD_ULOGIC'image(i) &
           " b: " &
