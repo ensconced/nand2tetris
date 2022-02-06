@@ -1,5 +1,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
 
 ENTITY not16_tb IS
 END not16_tb;
@@ -14,19 +15,18 @@ ARCHITECTURE Behavioral OF not16_tb IS
   SIGNAL input, output : STD_ULOGIC_VECTOR(15 DOWNTO 0);
 
 BEGIN
-  uut : not_gate PORT MAP(
-    input => a,
-    output => b
+  uut : not16 PORT MAP(
+    input => input,
+    output => output
   );
-
   stim : PROCESS
+    TYPE test_inputs IS ARRAY(2 DOWNTO 0) OF unsigned(15 DOWNTO 0);
+    VARIABLE test_nums : test_inputs := (to_unsigned(0, 16), to_unsigned(1, 16), to_unsigned(1234, 16));
   BEGIN
-    FOR i IN STD_ULOGIC RANGE '0' TO '1' LOOP
-      a <= i;
+    FOR i IN test_nums' RANGE LOOP
+      input <= STD_ULOGIC_VECTOR(test_nums(i));
       WAIT FOR 10 ns;
-      ASSERT (b = (NOT a)) REPORT "test failed for a: "
-      & STD_ULOGIC'image(i)
-      SEVERITY failure;
+      ASSERT (output = (NOT STD_ULOGIC_VECTOR(test_nums(i)))) REPORT "test failed for input: " & INTEGER'image(to_integer(test_nums(i))) SEVERITY failure;
     END LOOP;
     WAIT;
   END PROCESS;
