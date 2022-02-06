@@ -2,7 +2,7 @@
 
 set -eu
 
-rsync -r --port 18683 fpga joe@192.168.178.40:~/dev/vivado-scripting
+rsync -r --delete --port 18683 fpga joe@192.168.178.40:~/dev/vivado-scripting
 
 expect -c '
 set timeout -1
