@@ -25,9 +25,9 @@ BEGIN
     input(63 DOWNTO 48) => input_d,
     input(47 DOWNTO 32) => input_c,
     input(31 DOWNTO 16) => input_b,
-    input(15 DOWNTO 0) => input_a),
-  sel => sel,
-  output => output
+    input(15 DOWNTO 0) => input_a,
+    sel => sel,
+    output => output
   );
   stim : PROCESS
     VARIABLE val_for_input_a : STD_ULOGIC_VECTOR(15 DOWNTO 0) := "0000000000000000";
