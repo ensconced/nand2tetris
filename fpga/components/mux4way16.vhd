@@ -38,5 +38,10 @@ BEGIN
   mux_b : mux16 PORT MAP(input_a => const_zero, input_b => input(31 DOWNTO 16), sel => sel_out(1), output => mux_b_out);
   mux_c : mux16 PORT MAP(input_a => const_zero, input_b => input(47 DOWNTO 32), sel => sel_out(2), output => mux_c_out);
   mux_d : mux16 PORT MAP(input_a => const_zero, input_b => input(63 DOWNTO 48), sel => sel_out(3), output => mux_d_out);
-  or_funnel : orfunnel4way16 PORT MAP(input => (mux_d_out & mux_c_out & mux_b_out & mux_a_out), output => output);
+  or_funnel : orfunnel4way16 PORT MAP(
+    input(63 DOWNTO 48) => mux_d_out,
+    input(47 DOWNTO 32) => mux_c_out,
+    input(31 DOWNTO 16) => mux_b_out,
+    input(15 DOWNTO 0) => mux_a_out,
+    output => output);
 END structural;

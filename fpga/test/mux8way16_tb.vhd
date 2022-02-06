@@ -18,9 +18,16 @@ ARCHITECTURE Behavioral OF mux8way16_tb IS
   SIGNAL output : STD_ULOGIC_VECTOR(15 DOWNTO 0);
 BEGIN
   uut : mux8way16 PORT MAP(
-    input => (input_h & input_g & input_f & input_e & input_d & input_c & input_b & input_a),
-    sel => sel,
-    output => output
+    input(127 DOWNTO 112) => input_h,
+    input(111 DOWNTO 96) => input_g,
+    input(95 DOWNTO 80) => input_f,
+    input(79 DOWNTO 64) => input_e,
+    input(63 DOWNTO 48) => input_d,
+    input(47 DOWNTO 32) => input_c,
+    input(31 DOWNTO 16) => input_b,
+    input(15 DOWNTO 0) => input_a),
+  sel => sel,
+  output => output
   );
   stim : PROCESS
     VARIABLE val_for_input_a : STD_ULOGIC_VECTOR(15 DOWNTO 0) := "0000000000000000";

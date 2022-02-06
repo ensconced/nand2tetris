@@ -18,7 +18,10 @@ ARCHITECTURE Behavioral OF mux4way16_tb IS
   SIGNAL output : STD_ULOGIC_VECTOR(15 DOWNTO 0);
 BEGIN
   uut : mux4way16 PORT MAP(
-    input => (input_d & input_c & input_b & input_a),
+    input(63 DOWNTO 48) => input_d,
+    input(47 DOWNTO 32) => input_c,
+    input(31 DOWNTO 16) => input_b,
+    input(15 DOWNTO 0) => input_a,
     sel => sel,
     output => output
   );
