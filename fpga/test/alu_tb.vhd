@@ -115,7 +115,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "x test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- y
         use_add <= '1';
         should_not_output <= '0';
@@ -127,7 +127,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(j))) REPORT "y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- not x
         use_add <= '1';
         should_not_output <= '0';
@@ -139,7 +139,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(NOT test_nums(i))) REPORT "not x test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- not y
         use_add <= '1';
         should_not_output <= '0';
@@ -151,7 +151,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(NOT test_nums(j))) REPORT "not x test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- minus x
         use_add <= '1';
         should_not_output <= '1';
@@ -163,7 +163,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(-test_nums(i))) REPORT "minus x test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- minus y
         use_add <= '1';
         should_not_output <= '1';
@@ -175,7 +175,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(-test_nums(j))) REPORT "minus y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x plus one
         use_add <= '1';
         should_not_output <= '1';
@@ -187,7 +187,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) + 1)) REPORT "x plus one test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- y plus one
         use_add <= '1';
         should_not_output <= '1';
@@ -199,7 +199,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(j) + 1)) REPORT "y plus one test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x minus one
         use_add <= '1';
         should_not_output <= '0';
@@ -211,7 +211,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) - 1)) REPORT "x minus one test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- y minus one
         use_add <= '1';
         should_not_output <= '0';
@@ -223,7 +223,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(j) - 1)) REPORT "y minus one test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x plus y
         use_add <= '1';
         should_not_output <= '0';
@@ -235,7 +235,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) + test_nums(j))) REPORT "x plus y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x minus y
         use_add <= '1';
         should_not_output <= '1';
@@ -247,7 +247,7 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) - test_nums(j))) REPORT "x minus y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- y minus x
         use_add <= '1';
         should_not_output <= '1';
@@ -259,19 +259,19 @@ BEGIN
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(j) - test_nums(i))) REPORT "y minus x test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x and y
         use_add <= '0';
         should_not_output <= '0';
         zero_x <= '0';
         zero_y <= '0';
         not_x <= '0';
-        not_y <= '1';
+        not_y <= '0';
         input_x <= STD_ULOGIC_VECTOR(test_nums(i));
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
         ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) AND test_nums(j))) REPORT "x and y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
         -- x or y
         use_add <= '0';
         should_not_output <= '1';
@@ -282,8 +282,8 @@ BEGIN
         input_x <= STD_ULOGIC_VECTOR(test_nums(i));
         input_y <= STD_ULOGIC_VECTOR(test_nums(j));
         WAIT FOR 10 ns;
-        ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) OR test_nums(j))) REPORT "x and y test failed for with input_x: " &
-        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j)));
+        ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i) OR test_nums(j))) REPORT "x or y test failed for with input_x: " &
+        INTEGER'image(to_integer(test_nums(i))) & " input_y: " & INTEGER'image(to_integer(test_nums(j))) SEVERITY failure;
       END LOOP;
     END LOOP;
     WAIT;
