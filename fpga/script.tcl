@@ -20,14 +20,14 @@ foreach simset $simset_list {
   launch_simulation -simset $simset
 }
 
-# synth_design -top is_non_zero -part xc7a35tcpg236-1
-# opt_design
-# place_design
-# route_design
+synth_design -top bit_register -part xc7a35tcpg236-1
+opt_design
+place_design
+route_design
 
-# write_bitstream -force out.bit
-# open_hw_manager
-# connect_hw_server
-# open_hw_target
-# set_property PROGRAM.FILE out.bit [current_hw_device]
-# program_hw_device
+write_bitstream -force out.bit
+open_hw_manager
+connect_hw_server
+open_hw_target
+set_property PROGRAM.FILE out.bit [current_hw_device]
+program_hw_device
