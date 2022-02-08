@@ -38,7 +38,7 @@ BEGIN
       -- 0
       clock <= '0';
       load <= '1';
-      input <= STD_ULOGIC_VECTOR(to_unsigned(1, 16));
+      input <= STD_ULOGIC_VECTOR(test_nums(i));
       WAIT FOR 5 ns;
       -- 1
       WAIT FOR 5 ns;
@@ -48,29 +48,29 @@ BEGIN
       -- 3
       load <= '0';
       input <= STD_ULOGIC_VECTOR(to_unsigned(0, 16));
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 3" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 3" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 4
       clock <= '0';
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 4" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 4" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 5
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 5" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 5" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 6
       clock <= '1';
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 6" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 6" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 7
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 7" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 7" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 8
       clock <= '0';
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 8" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 8" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 9
       load <= '1';
-      ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(1, 16))) REPORT "test failed at stage 9" SEVERITY failure;
+      ASSERT (output = STD_ULOGIC_VECTOR(test_nums(i))) REPORT "test failed at stage 9" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 10
       clock <= '1';
@@ -84,7 +84,7 @@ BEGIN
       WAIT FOR 5 ns;
       -- 13
       load <= '0';
-      input <= STD_ULOGIC_VECTOR(to_unsigned(1, 16));
+      input <= STD_ULOGIC_VECTOR(test_nums(i));
       ASSERT (output = STD_ULOGIC_VECTOR(to_unsigned(0, 16))) REPORT "test failed at stage 13" SEVERITY failure;
       WAIT FOR 5 ns;
       -- 14
