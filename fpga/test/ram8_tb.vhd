@@ -8,9 +8,12 @@ END ram8_tb;
 ARCHITECTURE Behavioral OF ram8_tb IS
   PROCEDURE load_value(
     VARIABLE value : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
+    CONSTANT address_value : IN STD_ULOGIC_VECTOR(2 DOWNTO 0);
+    SIGNAL address : OUT STD_ULOGIC_VECTOR(2 DOWNTO 0);
     SIGNAL clock : OUT STD_ULOGIC;
     SIGNAL input : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL load : OUT STD_ULOGIC) IS BEGIN
+    address <= address_value;
     clock <= '0';
     WAIT FOR 5 ns;
     input <= value;
@@ -19,6 +22,15 @@ ARCHITECTURE Behavioral OF ram8_tb IS
     clock <= '1';
     WAIT FOR 5 ns;
   END load_value;
+  PROCEDURE check_value(
+    VARIABLE expected_value : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
+    CONSTANT address_value : IN STD_ULOGIC_VECTOR(2 DOWNTO 0);
+    SIGNAL address : OUT STD_ULOGIC_VECTOR(2 DOWNTO 0);
+    SIGNAL output : IN STD_ULOGIC_VECTOR(15 DOWNTO 0)) IS BEGIN
+    address <= address_value;
+    WAIT FOR 5 ns;
+    ASSERT (output = expected_value) REPORT "test failed" SEVERITY failure;
+  END check_value;
   COMPONENT ram8 IS
     PORT (
       input : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
@@ -44,8 +56,7 @@ BEGIN
     VARIABLE b : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(-5463, 16));
     VARIABLE c : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(-32767, 16));
   BEGIN
-    address <= "000";
-    load_value(value => a, clock => clock, input => input, load => load);
-    ASSERT (output = a) REPORT "test failed at stage 1" SEVERITY failure;
+    load_value(a, "000", address, clock, input, load);
+    check_value(a, "000", address, output);
   END PROCESS;
 END Behavioral;
