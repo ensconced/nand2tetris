@@ -2,14 +2,14 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
-ENTITY ram8_tb IS
-END ram8_tb;
+ENTITY ram64_tb IS
+END ram64_tb;
 
-ARCHITECTURE Behavioral OF ram8_tb IS
+ARCHITECTURE Behavioral OF ram64_tb IS
   PROCEDURE load_value(
     VARIABLE value : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
-    CONSTANT address_value : IN STD_ULOGIC_VECTOR(2 DOWNTO 0);
-    SIGNAL address : OUT STD_ULOGIC_VECTOR(2 DOWNTO 0);
+    CONSTANT address_value : IN STD_ULOGIC_VECTOR(5 DOWNTO 0);
+    SIGNAL address : OUT STD_ULOGIC_VECTOR(5 DOWNTO 0);
     SIGNAL clock : OUT STD_ULOGIC;
     SIGNAL input : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL load : OUT STD_ULOGIC) IS BEGIN
@@ -24,27 +24,27 @@ ARCHITECTURE Behavioral OF ram8_tb IS
   END load_value;
   PROCEDURE check_value(
     VARIABLE expected_value : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
-    CONSTANT address_value : IN STD_ULOGIC_VECTOR(2 DOWNTO 0);
-    SIGNAL address : OUT STD_ULOGIC_VECTOR(2 DOWNTO 0);
+    CONSTANT address_value : IN STD_ULOGIC_VECTOR(5 DOWNTO 0);
+    SIGNAL address : OUT STD_ULOGIC_VECTOR(5 DOWNTO 0);
     SIGNAL output : IN STD_ULOGIC_VECTOR(15 DOWNTO 0)) IS BEGIN
     address <= address_value;
     WAIT FOR 5 ns;
     ASSERT (output = expected_value) REPORT "test failed" SEVERITY failure;
   END check_value;
-  COMPONENT ram8 IS
+  COMPONENT ram64 IS
     PORT (
       input : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
-      address : IN STD_ULOGIC_VECTOR(2 DOWNTO 0);
+      address : IN STD_ULOGIC_VECTOR(5 DOWNTO 0);
       output : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
       load : IN STD_ULOGIC;
       clock : IN STD_ULOGIC);
   END COMPONENT;
 
   SIGNAL input, output : STD_ULOGIC_VECTOR(15 DOWNTO 0);
-  SIGNAL address : STD_ULOGIC_VECTOR(2 DOWNTO 0);
+  SIGNAL address : STD_ULOGIC_VECTOR(5 DOWNTO 0);
   SIGNAL load, clock : STD_ULOGIC;
 BEGIN
-  uut : ram8 PORT MAP(
+  uut : ram64 PORT MAP(
     input => input,
     output => output,
     address => address,
@@ -55,15 +55,21 @@ BEGIN
     VARIABLE a : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(-32768, 16));
     VARIABLE b : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(-5463, 16));
     VARIABLE c : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(-32767, 16));
+    VARIABLE d : STD_ULOGIC_VECTOR(15 DOWNTO 0) := STD_ULOGIC_VECTOR(to_signed(1234, 16));
   BEGIN
-    load_value(a, "000", address, clock, input, load);
-    check_value(a, "000", address, output);
-    load_value(b, "001", address, clock, input, load);
-    check_value(a, "000", address, output);
-    check_value(b, "001", address, output);
-    load_value(c, "010", address, clock, input, load);
-    check_value(a, "000", address, output);
-    check_value(b, "001", address, output);
-    check_value(c, "010", address, output);
+    load_value(a, "000000", address, clock, input, load);
+    check_value(a, "000000", address, output);
+    load_value(b, "000001", address, clock, input, load);
+    check_value(a, "000000", address, output);
+    check_value(b, "000001", address, output);
+    load_value(c, "000010", address, clock, input, load);
+    check_value(a, "000000", address, output);
+    check_value(b, "000001", address, output);
+    check_value(c, "000010", address, output);
+    load_value(d, "000100", address, clock, input, load);
+    check_value(a, "000000", address, output);
+    check_value(b, "000001", address, output);
+    check_value(c, "000010", address, output);
+    check_value(d, "000100", address, output);
   END PROCESS;
 END Behavioral;
