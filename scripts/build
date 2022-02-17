@@ -2,12 +2,12 @@
 
 set -eu
 
-rsync -r --delete --port 18683 fpga joe@192.168.178.40:~/dev/vivado-scripting
+rsync -r --delete -e 'ssh -p 18683' fpga joe@192.168.178.40:~/dev/vivado-scripting
 
 expect -c '
 set timeout -1
 spawn ./scripts/drive-vivado
-expect -re "Failure|ERROR"
+expect -re "Failure|ERROR|Timeout"
 send \x03
 exit 1
 '
