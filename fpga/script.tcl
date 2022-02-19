@@ -6,7 +6,7 @@ read_xdc constraints.xdc
 
 set simset_list {}
 
-foreach test_file [glob test/*.vhd] {
+foreach test_file [glob test/counter_tb.vhd] {
   set base_name [file rootname [file tail $test_file]]
   set new_simset [create_fileset -simset $base_name]
   add_files -fileset $base_name $test_file
