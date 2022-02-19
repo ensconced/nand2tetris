@@ -11,7 +11,8 @@ ENTITY alu IS
     not_y : IN STD_ULOGIC;
     use_add : IN STD_ULOGIC;
     should_not_output : IN STD_ULOGIC;
-    output, not_output : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
+    output : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
+    not_output : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0);
     output_is_zero : OUT STD_ULOGIC
   );
 END alu;

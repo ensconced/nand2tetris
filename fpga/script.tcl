@@ -6,7 +6,7 @@ read_xdc constraints.xdc
 
 set simset_list {}
 
-foreach test_file [glob test/counter_tb.vhd] {
+foreach test_file [glob test/*.vhd] {
   set base_name [file rootname [file tail $test_file]]
   set new_simset [create_fileset -simset $base_name]
   add_files -fileset $base_name $test_file
@@ -20,7 +20,7 @@ foreach simset $simset_list {
   launch_simulation -simset $simset
 }
 
-synth_design -top bit_register -part xc7a35tcpg236-1
+synth_design -top rom -part xc7a35tcpg236-1
 opt_design
 place_design
 route_design
