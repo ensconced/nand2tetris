@@ -63,9 +63,20 @@ ARCHITECTURE structural OF cpu IS
       input_b : IN STD_ULOGIC;
       output : OUT STD_ULOGIC);
   END COMPONENT;
-  SIGNAL input_x, input_y, alu_output, not_alu_output, reg_a_in_mux_out : STD_ULOGIC_VECTOR(15 DOWNTO 0);
-  SIGNAL alu_output_is_zero, reg_d_load, is_a_instruction, is_c_instruction_with_dest_a : STD_ULOGIC;
+  COMPONENT jump_loader
+    PORT (
+      j1 : IN STD_ULOGIC;
+      j2 : IN STD_ULOGIC;
+      j3 : IN STD_ULOGIC;
+      is_zero : IN STD_ULOGIC;
+      is_negative : IN STD_ULOGIC;
+      is_c_instruction : IN STD_ULOGIC;
+      output : OUT STD_ULOGIC);
+  END COMPONENT;
+  SIGNAL input_x, input_y, alu_output, reg_a_in, reg_a_out, not_alu_output : STD_ULOGIC_VECTOR(15 DOWNTO 0);
+  SIGNAL is_c_instruction, is_a_instruction, alu_out_into_reg_a, load_reg_a, load_reg_d, alu_output_is_zero, const_one, jump_loader_out : STD_ULOGIC;
 BEGIN
+  const_one <= '1';
   alu_a : alu PORT MAP(
     input_x => input_x,
     input_y => input_y,
@@ -80,21 +91,21 @@ BEGIN
     output_is_zero => alu_output_is_zero
   );
   reg_a : register16 PORT MAP(
-    input => reg_a_in_mux_out,
+    input => reg_a_in,
     output => reg_a_out,
-    load => reg_a_load,
+    load => load_reg_a,
     clock => clock
   );
   reg_d : register16 PORT MAP(
     input => alu_output,
     output => input_x,
-    load => reg_d_load,
+    load => load_reg_d,
     clock => clock
   );
   and_a : and_gate PORT MAP(
     input_a => instruction(0),
     input_b => instruction(11),
-    output => reg_d_load
+    output => load_reg_d
   );
   not_a : not_gate PORT MAP(
     input => instruction(0),
@@ -103,16 +114,47 @@ BEGIN
   and_b : and_gate PORT MAP(
     input_a => instruction(0),
     input_b => instruction(10),
-    output => is_c_instruction_with_dest_a
+    output => alu_out_into_reg_a
   );
   or_a : or_gate PORT MAP(
-    input_a => is_c_instruction_with_dest_a,
+    input_a => alu_out_into_reg_a,
     input_b => is_a_instruction,
-    output => reg_a_load
+    output => load_reg_a
   );
   mux_a : mux16 PORT MAP(
     input_a => instruction,
-    input_b = >,
-    sel : IN STD_ULOGIC,
-    output : OUT STD_ULOGIC_VECTOR(15 DOWNTO 0));
+    input_b => alu_output,
+    sel => alu_out_into_reg_a,
+    output => reg_a_in
+  );
+  mux_b : mux16 PORT MAP(
+    input_a => reg_a_out,
+    input_b => inM,
+    sel => instruction(3),
+    output => input_y
+  );
+  counter_a : counter PORT MAP(
+    input => reg_a_out,
+    output => pc,
+    inc => const_one,
+    load => jump_loader_out,
+    reset => reset,
+    clock => clock
+  );
+  jump_loader_a : jump_loader PORT MAP(
+    j1 => instruction(13),
+    j2 => instruction(14),
+    j3 => instruction(15),
+    is_zero => alu_output_is_zero,
+    is_negative => alu_output(0),
+    is_c_instruction => instruction(0),
+    output => jump_loader_output
+  );
+  and_c : and_gate PORT MAP(
+    input_a => instruction(12),
+    input_b => is_c_instruction,
+    output => writeM
+  );
+  addressM <= reg_a_out;
+  outM <= alu_output;
 END structural;
