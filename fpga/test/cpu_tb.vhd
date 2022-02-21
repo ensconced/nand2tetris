@@ -43,16 +43,21 @@ BEGIN
 
   stim : PROCESS
   BEGIN
+    -- SETUP
     inM <= "0000000000000000";
     instruction <= "0000000000000000";
     reset <= '1';
     tick(clk);
     ASSERT (pc = "0000000000000000") REPORT "failed test at stage 1" SEVERITY failure;
+
+    -- INCREMENTING PC
     reset <= '0';
     tick(clk);
     ASSERT (pc = "0000000000000001") REPORT "failed test at stage 2" SEVERITY failure;
     tick(clk);
     ASSERT (pc = "0000000000000010") REPORT "failed test at stage 3" SEVERITY failure;
+
+    -- A + D
     -- load value "1" into register A
     instruction <= "0000000000000001";
     tick(clk);
@@ -66,10 +71,28 @@ BEGIN
     instruction <= "0000000000000010";
     tick(clk);
     ASSERT (addressM = "0000000000000010") REPORT "failed test at stage 7" SEVERITY failure;
-    -- add the values of registers A and D and put result in register D
-    instruction <= "1110000010010000";
-    tick(clk);
+    -- add the values of registers A and D
+    instruction <= "1110000010000000";
+    WAIT FOR 5 ns;
     ASSERT (outM = "0000000000000011") REPORT "failed test at stage 8" SEVERITY failure;
+
+    -- D + M
+    -- load value "3" into register A
+    instruction <= "0000000000000011";
+    tick(clk);
+    ASSERT (addressM = "0000000000000011") REPORT "failed test at stage 9" SEVERITY failure;
+    -- load contents of register A into register D
+    instruction <= "1110110000010000";
+    tick(clk);
+    ASSERT (outM = "0000000000000011") REPORT "failed test at stage 10" SEVERITY failure;
+    -- set value "4" as inM
+    inM <= "0000000000000100";
+    -- add the values of D and inM
+    instruction <= "1111000010000000";
+    WAIT FOR 5 ns;
+    ASSERT (outM = "0000000000000111") REPORT "failed test at stage 11" SEVERITY failure;
+    -- TODO - d1d2d3
+    -- TODO - j1j2j3
     WAIT;
   END PROCESS;
 END Behavioral;

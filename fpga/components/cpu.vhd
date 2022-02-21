@@ -86,9 +86,9 @@ BEGIN
   alu_a : alu PORT MAP(
     input_x => input_x,
     input_y => input_y,
-    zero_x => instruction(11),
+    zero_x => instruction(10),
     zero_y => instruction(9),
-    not_x => instruction(10),
+    not_x => instruction(11),
     not_y => instruction(8),
     use_add => instruction(7),
     should_not_output => instruction(6),
