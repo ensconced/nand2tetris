@@ -124,6 +124,23 @@ BEGIN
     ASSERT (outM = "0000000001011010") REPORT "failed test at stage 15" SEVERITY failure;
     tick(clk);
     ASSERT (outM = "0000000001100100") REPORT "failed test at stage 15" SEVERITY failure;
+    -----------------------------------------------------------------------------------
+    -- Jump if output is non-zero
+    reset <= '1';
+    tick(clk);
+    reset <= '0';
+    -- load address "7" into register A
+    instruction <= "0000000000000111";
+    tick(clk);
+    ASSERT (pc = "0000000000000001") REPORT "failed test at stage 16" SEVERITY failure;
+    --  output value "0" from alu - this should not result in a jump
+    instruction <= "1110101010000100";
+    tick(clk);
+    ASSERT (pc = "0000000000000010") REPORT "failed test at stage 17" SEVERITY failure;
+    --  output value "1" from alu - this should result in a jump
+    instruction <= "1110111111000100";
+    tick(clk);
+    ASSERT (pc = "0000000000000111") REPORT "failed test at stage 18" SEVERITY failure;
     -- TODO - j1j2j3
     WAIT;
   END PROCESS;
