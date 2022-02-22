@@ -1,6 +1,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
-USE std.textio.ALL;
+USE ieee.numeric_std.ALL;
 
 ENTITY cpu_tb IS
 END cpu_tb;
@@ -123,25 +123,70 @@ BEGIN
     tick(clk);
     ASSERT (outM = "0000000001011010") REPORT "failed test at stage 15" SEVERITY failure;
     tick(clk);
-    ASSERT (outM = "0000000001100100") REPORT "failed test at stage 15" SEVERITY failure;
+    ASSERT (outM = "0000000001100100") REPORT "failed test at stage 16" SEVERITY failure;
     -----------------------------------------------------------------------------------
-    -- Jump if output is non-zero
+    -- Jump if output is negative
     reset <= '1';
     tick(clk);
     reset <= '0';
     -- load address "7" into register A
     instruction <= "0000000000000111";
     tick(clk);
-    ASSERT (pc = "0000000000000001") REPORT "failed test at stage 16" SEVERITY failure;
+    ASSERT (pc = "0000000000000001") REPORT "failed test at stage 17" SEVERITY failure;
     --  output value "0" from alu - this should not result in a jump
     instruction <= "1110101010000100";
     tick(clk);
-    ASSERT (pc = "0000000000000010") REPORT "failed test at stage 17" SEVERITY failure;
-    --  output value "1" from alu - this should result in a jump
+    ASSERT (pc = "0000000000000010") REPORT "failed test at stage 18: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "1" from alu - this should not result in a jump
     instruction <= "1110111111000100";
     tick(clk);
-    ASSERT (pc = "0000000000000111") REPORT "failed test at stage 18" SEVERITY failure;
-    -- TODO - j1j2j3
+    ASSERT (pc = "0000000000000011") REPORT "failed test at stage 19: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "-1" from alu - this should result in a jump
+    instruction <= "1110111010000100";
+    tick(clk);
+    ASSERT (pc = "0000000000000111") REPORT "failed test at stage 20" SEVERITY failure;
+    -----------------------------------------------------------------------------------
+    -- Jump if output is zero
+    reset <= '1';
+    tick(clk);
+    reset <= '0';
+    -- load address "7" into register A
+    instruction <= "0000000000000111";
+    tick(clk);
+    ASSERT (pc = "0000000000000001") REPORT "failed test at stage 21" SEVERITY failure;
+    --  output value "-1" from alu - this should not result in a jump
+    instruction <= "1110111010000010";
+    tick(clk);
+    ASSERT (pc = "0000000000000010") REPORT "failed test at stage 22: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "1" from alu - this should not result in a jump
+    instruction <= "1110111111000010";
+    tick(clk);
+    ASSERT (pc = "0000000000000011") REPORT "failed test at stage 23: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "0" from alu - this should result in a jump
+    instruction <= "1110101010000010";
+    tick(clk);
+    ASSERT (pc = "0000000000000111") REPORT "failed test at stage 24" SEVERITY failure;
+    -----------------------------------------------------------------------------------
+    -- Jump if output is positive
+    reset <= '1';
+    tick(clk);
+    reset <= '0';
+    -- load address "7" into register A
+    instruction <= "0000000000000111";
+    tick(clk);
+    ASSERT (pc = "0000000000000001") REPORT "failed test at stage 25" SEVERITY failure;
+    --  output value "-1" from alu - this should not result in a jump
+    instruction <= "1110111010000001";
+    tick(clk);
+    ASSERT (pc = "0000000000000010") REPORT "failed test at stage 26: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "0" from alu - this should not result in a jump
+    instruction <= "1110101010000001";
+    tick(clk);
+    ASSERT (pc = "0000000000000011") REPORT "failed test at stage 27: " & INTEGER'image(to_integer(unsigned(pc))) SEVERITY failure;
+    --  output value "1" from alu - this should result in a jump
+    instruction <= "1110111111000001";
+    tick(clk);
+    ASSERT (pc = "0000000000000111") REPORT "failed test at stage 28" SEVERITY failure;
     WAIT;
   END PROCESS;
 END Behavioral;

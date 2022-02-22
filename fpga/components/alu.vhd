@@ -6,8 +6,8 @@ ENTITY alu IS
     input_x : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
     input_y : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
     zero_x : IN STD_ULOGIC;
-    zero_y : IN STD_ULOGIC;
     not_x : IN STD_ULOGIC;
+    zero_y : IN STD_ULOGIC;
     not_y : IN STD_ULOGIC;
     use_add : IN STD_ULOGIC;
     should_not_output : IN STD_ULOGIC;

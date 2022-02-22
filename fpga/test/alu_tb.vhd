@@ -11,8 +11,8 @@ ARCHITECTURE Behavioral OF alu_tb IS
       input_x : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
       input_y : IN STD_ULOGIC_VECTOR(15 DOWNTO 0);
       zero_x : IN STD_ULOGIC;
-      zero_y : IN STD_ULOGIC;
       not_x : IN STD_ULOGIC;
+      zero_y : IN STD_ULOGIC;
       not_y : IN STD_ULOGIC;
       use_add : IN STD_ULOGIC;
       should_not_output : IN STD_ULOGIC;
@@ -28,8 +28,8 @@ BEGIN
     input_x => input_x,
     input_y => input_y,
     zero_x => zero_x,
-    zero_y => zero_y,
     not_x => not_x,
+    zero_y => zero_y,
     not_y => not_y,
     use_add => use_add,
     should_not_output => should_not_output,
