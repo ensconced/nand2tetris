@@ -28,38 +28,147 @@ BEGIN
   );
   stim : PROCESS
   BEGIN
-    j1 <= '0';
+    -- TODO - also test when this is set to zero
+    is_c_instruction <= '1';
+    -----------------------------------------------------------------------
+    -- Jump iff negative
+    j1 <= '1';
     j2 <= '0';
     j3 <= '0';
-    is_zero <= '0';
-    is_negative <= '0';
-    is_c_instruction <= '0';
-    WAIT FOR 10 ns;
-    ASSERT (output = '0') REPORT "test failed at stage 1" SEVERITY failure;
-    j1 <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '0') REPORT "test failed at stage 2" SEVERITY failure;
+    -- jump for negative
     is_negative <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '0') REPORT "test failed at stage 3" SEVERITY failure;
-    is_c_instruction <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '1') REPORT "test failed at stage 4" SEVERITY failure;
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '1') REPORT "test failed at stage 1" SEVERITY failure;
+
+    -- no jump for zero
     is_negative <= '0';
     is_zero <= '1';
-    j2 <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '1') REPORT "test failed at stage 5" SEVERITY failure;
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 2" SEVERITY failure;
+
+    -- no jump for positive
+    is_negative <= '0';
     is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 3" SEVERITY failure;
+    -----------------------------------------------------------------------
+    -- Jump iff zero
+    j1 <= '0';
+    j2 <= '1';
+    j3 <= '0';
+
+    -- no jump for negative
+    is_negative <= '1';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 4" SEVERITY failure;
+
+    -- jump for zero
+    is_negative <= '0';
+    is_zero <= '1';
+    WAIT FOR 5 ns;
+    ASSERT (output = '1') REPORT "test failed at stage 5" SEVERITY failure;
+
+    -- no jump for positive
+    is_negative <= '0';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 6" SEVERITY failure;
+
+    -----------------------------------------------------------------------
+    -- Jump iff positive
+    j1 <= '0';
     j2 <= '0';
     j3 <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '1') REPORT "test failed at stage 6" SEVERITY failure;
+
+    -- no jump for negative
+    is_negative <= '1';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 7" SEVERITY failure;
+
+    -- no jump for zero
+    is_negative <= '0';
+    is_zero <= '1';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 8" SEVERITY failure;
+
+    -- jump for positive
+    is_negative <= '0';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '1') REPORT "test failed at stage 9" SEVERITY failure;
+
+    -----------------------------------------------------------------------
+    -- When is_c_instruction is zero, we should get no jumps under any circumstance.
+    is_c_instruction <= '0';
+    -----------------------------------------------------------------------
     j1 <= '1';
+    j2 <= '0';
+    j3 <= '0';
+    -- no jump for negative
+    is_negative <= '1';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 1" SEVERITY failure;
+
+    -- no jump for zero
+    is_negative <= '0';
+    is_zero <= '1';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 2" SEVERITY failure;
+
+    -- no jump for positive
+    is_negative <= '0';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 3" SEVERITY failure;
+    -----------------------------------------------------------------------
+    j1 <= '0';
     j2 <= '1';
+    j3 <= '0';
+
+    -- no jump for negative
+    is_negative <= '1';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 4" SEVERITY failure;
+
+    -- no jump for zero
+    is_negative <= '0';
+    is_zero <= '1';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 5" SEVERITY failure;
+
+    -- no jump for positive
+    is_negative <= '0';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 6" SEVERITY failure;
+
+    -----------------------------------------------------------------------
+    j1 <= '0';
+    j2 <= '0';
     j3 <= '1';
-    WAIT FOR 10 ns;
-    ASSERT (output = '1') REPORT "test failed at stage 7" SEVERITY failure;
+
+    -- no jump for negative
+    is_negative <= '1';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 7" SEVERITY failure;
+
+    -- no jump for zero
+    is_negative <= '0';
+    is_zero <= '1';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 8" SEVERITY failure;
+
+    -- no jump for positive
+    is_negative <= '0';
+    is_zero <= '0';
+    WAIT FOR 5 ns;
+    ASSERT (output = '0') REPORT "test failed at stage 9" SEVERITY failure;
     WAIT;
   END PROCESS;
 END Behavioral;

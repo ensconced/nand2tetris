@@ -125,7 +125,7 @@ BEGIN
     tick(clk);
     ASSERT (outM = "0000000001100100") REPORT "failed test at stage 16" SEVERITY failure;
     -----------------------------------------------------------------------------------
-    -- Jump if output is negative
+    -- Jump iff output is negative
     reset <= '1';
     tick(clk);
     reset <= '0';
