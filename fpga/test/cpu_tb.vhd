@@ -146,7 +146,7 @@ BEGIN
     tick(clk);
     ASSERT (pc = "0000000000000111") REPORT "failed test at stage 20" SEVERITY failure;
     -----------------------------------------------------------------------------------
-    -- Jump if output is zero
+    -- Jump iff output is zero
     reset <= '1';
     tick(clk);
     reset <= '0';
@@ -167,7 +167,7 @@ BEGIN
     tick(clk);
     ASSERT (pc = "0000000000000111") REPORT "failed test at stage 24" SEVERITY failure;
     -----------------------------------------------------------------------------------
-    -- Jump if output is positive
+    -- Jump iff output is positive
     reset <= '1';
     tick(clk);
     reset <= '0';

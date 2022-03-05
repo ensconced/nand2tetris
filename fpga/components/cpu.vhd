@@ -152,8 +152,8 @@ BEGIN
     j2 => instruction(1),
     j3 => instruction(0),
     is_zero => alu_output_is_zero,
-    is_negative => alu_output(0),
-    is_c_instruction => instruction(15),
+    is_negative => alu_output(15),
+    is_c_instruction => is_c_instruction,
     output => jump_loader_out
   );
   and_c : and_gate PORT MAP(
