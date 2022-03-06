@@ -1,19 +1,21 @@
-function randomBit() {
-  return Math.random() < 0.5 ? "0" : "1";
-}
+const machineCode = [
+  "0000 0000 0000 0001", // load 1 into A
+  "1110 1100 0001 0000", // load A into D
+  "0100 0000 0000 0000", // load 32768 into A
+  "1110 0011 0000 1000", // load D into M[A]
+  "0000 0000 0000 0000", // load 0 into A
+  "1110 0000 0000 0111", // jump
+].map((word) => word.replace(/\s/g, ""));
 
-function randomWord() {
-  const result = [];
-  for (let i = 0; i < wordSize; i++) {
-    result.push(randomBit());
-  }
-  return result.join("");
+function nextWord() {
+  const instruction = machineCode.shift();
+  return instruction ? instruction.replace(/\s/g, "") : "0000000000000000";
 }
 
 function romLiteral() {
   const result = [];
   for (let i = 0; i < wordCount; i++) {
-    result.push(`${i} => "${randomWord()}"`);
+    result.push(`${i} => "${nextWord()}"`);
   }
   return result.join(", ");
 }

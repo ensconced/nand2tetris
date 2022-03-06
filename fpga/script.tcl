@@ -20,7 +20,7 @@ foreach simset $simset_list {
   launch_simulation -simset $simset
 }
 
-synth_design -top rom -part xc7a35tcpg236-1
+synth_design -top computer -part xc7a35tcpg236-1
 opt_design
 place_design
 route_design
