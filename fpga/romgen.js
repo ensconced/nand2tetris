@@ -1,15 +1,24 @@
-// switch on a single LED
-const machineCode = [
-  "0000 0000 0000 0001", // load 1 into A
-  "1110 110000 010 000", // load A into D
-  "0100 0000 0000 0000", // load 16384 into A
-  "1110 001100 001 000", // load D into M[A]
-  "0000 0000 0000 0000", // load 0 into A
-  "1110 000000 000 111", // jump
-].map((word) => word.replace(/\s/g, ""));
+const fs = require("fs");
+const path = require("path");
+
+const program = process.argv[2];
+if (program === undefined) {
+  throw new Error("no program");
+}
+
+const sourcePath = path.resolve(__dirname, "./programs", program);
+
+const lines = fs
+  .readFileSync(sourcePath, "utf-8")
+  .split("\n")
+  .map((line) => {
+    return line.match(/[01\s]*/)[0];
+  })
+  .filter((line) => line.length > 0)
+  .map((line) => line.replace(/\s/g, ""));
 
 function nextWord() {
-  const instruction = machineCode.shift();
+  const instruction = lines.shift();
   return instruction ? instruction.replace(/\s/g, "") : "0000000000000000";
 }
 
