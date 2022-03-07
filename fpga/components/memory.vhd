@@ -46,8 +46,8 @@ ARCHITECTURE structural OF memory IS
 BEGIN
   ram : ram16k PORT MAP
     (input => input, address => address(13 DOWNTO 0), output => mux_input_a, load => load_ram, clock => clock);
-  mux : mux16 PORT MAP(input_a => mux_input_a, input_b => led_reg_out, sel => address(13), output => output);
-  dmux_a : dmux PORT MAP(input => load, sel => address(13), output_a => load_ram, output_b => load_leds);
+  mux : mux16 PORT MAP(input_a => mux_input_a, input_b => led_reg_out, sel => address(14), output => output);
+  dmux_a : dmux PORT MAP(input => load, sel => address(14), output_a => load_ram, output_b => load_leds);
   led_reg : register16 PORT MAP(input => input, output => led_reg_out, load => load_leds, clock => clock);
   led_output <= led_reg_out;
 END structural;
