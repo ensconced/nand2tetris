@@ -1,8 +1,8 @@
 --------------------------------------------
-TURN LED OFF
+TURN LED ON
 
 0100 0000 0000 0000 // load 16384 into A - J3 | 0
-1110 101010 001 000 // load 0 into M[A] | 1
+1110 111111 001 000 // load 1 into M[A] | 1
 --------------------------------------------
 
 WAIT ONE SECOND
@@ -50,10 +50,10 @@ WAIT ONE SECOND
 1111 000111 000 100 // if M[A] - D < 0, jump | 25
 
 --------------------------------------------
-TURN LED ON
+TURN LED OFF
 
 0100 0000 0000 0000 // load 16384 into A | 26
-1110 111111 001 000 // load 1 into M[A] | 27
+1110 101010 001 000 // load 0 into M[A] | 27
 --------------------------------------------
 
 WAIT ONE SECOND
@@ -75,10 +75,10 @@ WAIT ONE SECOND
 1111 110111 001 000 // load M[A] + 1 into M[A] | 35
 
 // if M[0] - 100 < 0, jump to J0
-0000 0000 0110 0011 // load 100 into A | 36
+0000 0000 0110 0100 // load 100 into A | 36
 1110 110000 010 000 // load A into D | 37
 0000 0000 0010 0000  // load J0 into A | 38
-1111 000111 000 100 // if M[A] - D < 0, jump | 39
+1111 000111 000 100 // if M[A] - D < 0, jump | 39 // TODO - this is clearly wrong
 
 // M[1]++
 0000 0000 0000 0001 // load 1 into A | 40
