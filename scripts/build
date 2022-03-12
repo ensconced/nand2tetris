@@ -2,6 +2,15 @@
 
 set -eu
 
+program="$1"
+
+if [ -z "$program" ]; then
+  echo "usage: ./scripts/build <program>" 2>&1
+  exit 1
+fi
+
+node fpga/romgen.js "$program" >fpga/components/rom.vhd
+
 rsync -r --delete -e 'ssh -p 18683' fpga joe@192.168.178.40:~/dev/vivado-scripting
 
 expect -c '
